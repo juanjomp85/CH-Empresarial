@@ -1,0 +1,26 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Configuración para Next.js
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Variables de entorno (se configurarán en el dashboard de Netlify)
+[context.production.environment]
+  NEXT_PUBLIC_SUPABASE_URL = "your_production_supabase_url"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your_production_supabase_anon_key"
+  NEXT_PUBLIC_APP_URL = "https://your-app-name.netlify.app"
+
+[context.deploy-preview.environment]
+  NEXT_PUBLIC_SUPABASE_URL = "your_preview_supabase_url"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "your_preview_supabase_anon_key"
+  NEXT_PUBLIC_APP_URL = "https://deploy-preview-123--your-app-name.netlify.app"
