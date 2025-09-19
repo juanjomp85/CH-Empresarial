@@ -152,10 +152,10 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Gestión de Empleados
             </h1>
             <p className="text-gray-600">
@@ -173,7 +173,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Search and filters */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center space-x-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -190,32 +190,32 @@ export default function EmployeesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center">
             <User className="h-8 w-8 text-primary-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Empleados</p>
-              <p className="text-2xl font-bold text-gray-900">{employees.length}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{employees.length}</p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center">
             <Clock className="h-8 w-8 text-green-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Activos</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {employees.filter(emp => emp.is_active).length}
               </p>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center">
             <Euro className="h-8 w-8 text-yellow-600" />
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Tarifa Promedio</p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {formatCurrency(
                   employees.length > 0 
                     ? employees.reduce((sum, emp) => sum + emp.hourly_rate, 0) / employees.length
@@ -228,65 +228,65 @@ export default function EmployeesPage() {
       </div>
 
       {/* Employees table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Lista de Empleados
           </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Empleado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Posición
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Departamento
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Tarifa/Hora
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Estado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Fecha Contratación
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Acciones
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
               {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="hover:bg-gray-50">
+                <tr key={employee.id} className="hover:bg-gray-50 dark:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center">
                         <User className="h-5 w-5 text-primary-600" />
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {employee.full_name}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
                           <Mail className="h-4 w-4 mr-1" />
                           {employee.email}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {employee.position}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {employee.department}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(employee.hourly_rate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -298,7 +298,7 @@ export default function EmployeesPage() {
                       {employee.is_active ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatDate(employee.hire_date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -426,9 +426,9 @@ function EmployeeForm({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             {employee ? 'Editar Empleado' : 'Agregar Empleado'}
           </h3>
         </div>
@@ -512,7 +512,7 @@ function EmployeeForm({
               onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
-            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900 dark:text-white">
               Empleado activo
             </label>
           </div>

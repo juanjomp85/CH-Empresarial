@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Play, Pause, Square, Coffee } from 'lucide-react'
-import { formatTime, formatDate, calculateHours } from '@/lib/utils'
+import { formatTime, formatDate, calculateHours, getTodayString } from '@/lib/utils'
 
 interface TimeEntry {
   id: string
@@ -39,9 +39,30 @@ export default function TimeTrackingPage() {
 
   useEffect(() => {
     if (user) {
+      console.log('🔄 User changed, loading employee data:', user.id)
       loadEmployeeData()
+    } else {
+      console.log('❌ No user found')
     }
   }, [user])
+
+  // Test Supabase connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('🔗 Testing Supabase connection...')
+        const { data, error } = await supabase.from('departments').select('count').limit(1)
+        if (error) {
+          console.error('❌ Supabase connection failed:', error)
+        } else {
+          console.log('✅ Supabase connection successful')
+        }
+      } catch (error) {
+        console.error('❌ Supabase connection test failed:', error)
+      }
+    }
+    testConnection()
+  }, [])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -52,17 +73,21 @@ export default function TimeTrackingPage() {
   }, [])
 
   const loadEmployeeData = async () => {
+    console.log('🔄 Loading employee data for user:', user?.id)
     try {
       // Obtener empleado actual
-      const { data: emp } = await supabase
+      const { data: emp, error: empError } = await supabase
         .from('employees')
         .select('*')
         .eq('user_id', user?.id)
         .single()
 
+      console.log('👤 Employee query result:', { emp, empError })
+
       if (!emp) {
+        console.log('🆕 Creating new employee for user:', user?.id)
         // Si no existe el empleado, crearlo
-        const { data: newEmp } = await supabase
+        const { data: newEmp, error: newEmpError } = await supabase
           .from('employees')
           .insert({
             user_id: user?.id,
@@ -75,13 +100,16 @@ export default function TimeTrackingPage() {
           .select()
           .single()
 
+        console.log('🆕 New employee created:', { newEmp, newEmpError })
+        if (newEmpError) throw newEmpError
         setEmployee(newEmp)
       } else {
+        console.log('✅ Employee found:', emp)
         setEmployee(emp)
       }
 
       // Obtener entrada de hoy
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayString()
       const { data: entry } = await supabase
         .from('time_entries')
         .select('*')
@@ -105,12 +133,24 @@ export default function TimeTrackingPage() {
   }
 
   const handleClockIn = async () => {
-    if (!employee) return
+    console.log('🔄 handleClockIn called')
+    console.log('👤 Employee:', employee)
+    console.log('🔑 User:', user)
+    
+    if (!employee) {
+      console.log('❌ No employee found, returning')
+      alert('Error: No se encontró información del empleado. Por favor, recarga la página.')
+      return
+    }
 
     setActionLoading(true)
     try {
       const now = new Date().toISOString()
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayString()
+      
+      console.log('⏰ Current time:', now)
+      console.log('📅 Today:', today)
+      console.log('🆔 Employee ID:', employee.id)
 
       const { data, error } = await supabase
         .from('time_entries')
@@ -122,6 +162,8 @@ export default function TimeTrackingPage() {
         .select()
         .single()
 
+      console.log('📝 Insert result:', { data, error })
+
       if (error) throw error
 
       setTodayEntry(data)
@@ -130,9 +172,12 @@ export default function TimeTrackingPage() {
         breakStart: null,
         isOnBreak: false
       })
+      
+      console.log('✅ Clock in successful')
+      alert('¡Entrada registrada correctamente!')
     } catch (error) {
-      console.error('Error clocking in:', error)
-      alert('Error al registrar entrada')
+      console.error('❌ Error clocking in:', error)
+      alert(`Error al registrar entrada: ${error.message}`)
     } finally {
       setActionLoading(false)
     }
@@ -267,24 +312,24 @@ export default function TimeTrackingPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Control de Tiempo
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           {formatDate(currentTime)} - {formatTime(currentTime)}
         </p>
       </div>
 
       {/* Time tracking card */}
-      <div className="bg-white rounded-lg shadow p-8">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-8">
         <div className="text-center">
           {/* Current time display */}
           <div className="mb-8">
-            <div className="text-6xl font-bold text-gray-900 mb-2">
+            <div className="text-6xl font-bold text-gray-900 dark:text-white mb-2">
               {formatTime(currentTime)}
             </div>
-            <div className="text-lg text-gray-600">
+            <div className="text-lg text-gray-600 dark:text-gray-300">
               {formatDate(currentTime)}
             </div>
           </div>
@@ -295,9 +340,21 @@ export default function TimeTrackingPage() {
               <div className="text-3xl font-bold text-primary-600 mb-2">
                 {getCurrentWorkTime().toFixed(1)}h
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-gray-300">
                 Tiempo trabajado hoy
               </div>
+            </div>
+          )}
+
+          {/* Debug info */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded text-left text-xs">
+              <p><strong>Debug Info:</strong></p>
+              <p>User: {user ? '✅ Logged in' : '❌ Not logged in'}</p>
+              <p>Employee: {employee ? `✅ ID: ${employee.id}` : '❌ Not found'}</p>
+              <p>Loading: {loading ? '⏳ Yes' : '✅ No'}</p>
+              <p>Action Loading: {actionLoading ? '⏳ Yes' : '✅ No'}</p>
+              <p>Clock In: {currentSession.clockIn ? '✅ Yes' : '❌ No'}</p>
             </div>
           )}
 
@@ -306,11 +363,18 @@ export default function TimeTrackingPage() {
             {!currentSession.clockIn ? (
               <button
                 onClick={handleClockIn}
-                disabled={actionLoading}
+                disabled={actionLoading || loading || !employee}
                 className="w-full max-w-xs mx-auto btn-primary text-lg py-4 disabled:opacity-50"
               >
                 <Play className="inline-block mr-2 h-6 w-6" />
-                {actionLoading ? 'Registrando...' : 'Entrada'}
+                {actionLoading 
+                  ? 'Registrando...' 
+                  : loading 
+                    ? 'Cargando...'
+                    : !employee
+                      ? 'Sin empleado'
+                      : 'Entrada'
+                }
               </button>
             ) : !todayEntry?.clock_out ? (
               <div className="space-y-4">
@@ -347,7 +411,7 @@ export default function TimeTrackingPage() {
               </div>
             ) : (
               <div className="text-center">
-                <div className="text-lg text-gray-600 mb-4">
+                <div className="text-lg text-gray-600 dark:text-gray-300 mb-4">
                   Jornada completada
                 </div>
                 <div className="text-2xl font-bold text-green-600">
@@ -361,28 +425,28 @@ export default function TimeTrackingPage() {
 
       {/* Today's summary */}
       {todayEntry && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Resumen del Día
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600">Entrada</div>
-              <div className="text-lg font-semibold text-gray-900">
+              <div className="text-sm text-gray-600 dark:text-gray-300">Entrada</div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">
                 {formatTime(todayEntry.clock_in)}
               </div>
             </div>
             {todayEntry.clock_out && (
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">Salida</div>
-                <div className="text-lg font-semibold text-gray-900">
+                <div className="text-sm text-gray-600 dark:text-gray-300">Salida</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
                   {formatTime(todayEntry.clock_out)}
                 </div>
               </div>
             )}
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600">Total</div>
-              <div className="text-lg font-semibold text-gray-900">
+              <div className="text-sm text-gray-600 dark:text-gray-300">Total</div>
+              <div className="text-lg font-semibold text-gray-900 dark:text-white">
                 {todayEntry.total_hours ? `${todayEntry.total_hours.toFixed(1)}h` : 'En curso'}
               </div>
             </div>
@@ -391,18 +455,18 @@ export default function TimeTrackingPage() {
       )}
 
       {/* Status indicator */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center justify-center space-x-4">
           <div className={`w-3 h-3 rounded-full ${
             currentSession.clockIn ? 'bg-green-500' : 'bg-gray-300'
           }`}></div>
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-300">
             {currentSession.clockIn ? 'En el trabajo' : 'Fuera del trabajo'}
           </span>
           {currentSession.isOnBreak && (
             <>
               <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span className="text-sm text-gray-600">En descanso</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">En descanso</span>
             </>
           )}
         </div>

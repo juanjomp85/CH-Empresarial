@@ -41,25 +41,25 @@ export default function Sidebar() {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           type="button"
-          className="bg-white p-2 rounded-md shadow-md"
+          className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-md border dark:border-gray-700"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
           {mobileMenuOpen ? (
-            <X className="h-6 w-6" />
+            <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           ) : (
-            <Menu className="h-6 w-6" />
+            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           )}
         </button>
       </div>
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-950 shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0",
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 bg-primary-600">
+          <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
             <h1 className="text-xl font-bold text-white">
               Control Horario
             </h1>
@@ -76,8 +76,8 @@ export default function Sidebar() {
                   className={cn(
                     "flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
                     isActive
-                      ? "bg-primary-100 text-primary-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -89,10 +89,10 @@ export default function Sidebar() {
           </nav>
 
           {/* Sign out button */}
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <button
               onClick={handleSignOut}
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200"
             >
               <LogOut className="mr-3 h-5 w-5" />
               Cerrar Sesión
@@ -104,7 +104,7 @@ export default function Sidebar() {
       {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 dark:bg-opacity-70 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

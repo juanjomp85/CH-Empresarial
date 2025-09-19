@@ -44,7 +44,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-8">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">

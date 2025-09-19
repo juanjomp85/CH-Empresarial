@@ -193,3 +193,36 @@ CREATE POLICY "Admins can view all data" ON employees FOR ALL USING (
 CREATE POLICY "Admins can view all time entries" ON time_entries FOR ALL USING (
     EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid() AND raw_user_meta_data->>'role' = 'admin')
 );
+
+-- Tabla para preferencias de usuario
+CREATE TABLE user_preferences (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    theme VARCHAR(10) DEFAULT 'system' CHECK (theme IN ('light', 'dark', 'system')),
+    language VARCHAR(5) DEFAULT 'es',
+    timezone VARCHAR(50) DEFAULT 'Europe/Madrid',
+    notifications_enabled BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índices para preferencias de usuario
+CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id);
+
+-- Trigger para updated_at
+CREATE TRIGGER update_user_preferences_updated_at 
+    BEFORE UPDATE ON user_preferences 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- RLS para preferencias de usuario
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para preferencias de usuario
+CREATE POLICY "Users can view their own preferences" ON user_preferences 
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own preferences" ON user_preferences 
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own preferences" ON user_preferences 
+    FOR UPDATE USING (auth.uid() = user_id);

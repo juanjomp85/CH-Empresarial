@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Save, Building, Clock, Euro, Globe } from 'lucide-react'
+import { useTheme } from '@/components/providers/ThemeProvider'
+import { Save, Building, Clock, Euro, Globe, Palette, Sun, Moon, Monitor } from 'lucide-react'
 
 interface CompanySettings {
   id: string
@@ -16,6 +17,7 @@ interface CompanySettings {
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState<CompanySettings>({
     id: '',
     company_name: '',
@@ -105,8 +107,8 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           Configuración de la Empresa
         </h1>
         <p className="text-gray-600">
@@ -117,17 +119,17 @@ export default function SettingsPage() {
       {/* Settings Form */}
       <form onSubmit={handleSave} className="space-y-6">
         {/* Company Information */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Building className="h-6 w-6 text-primary-600 mr-3" />
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Información de la Empresa
             </h3>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Nombre de la Empresa
               </label>
               <input
@@ -143,17 +145,17 @@ export default function SettingsPage() {
         </div>
 
         {/* Time Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Clock className="h-6 w-6 text-primary-600 mr-3" />
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Configuración de Horarios
             </h3>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Horas Regulares por Día
               </label>
               <input
@@ -170,7 +172,7 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Umbral de Horas Extra
               </label>
               <input
@@ -190,16 +192,16 @@ export default function SettingsPage() {
         </div>
 
         {/* Payroll Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Euro className="h-6 w-6 text-primary-600 mr-3" />
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Configuración de Nómina
             </h3>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Multiplicador de Horas Extra
             </label>
             <input
@@ -218,16 +220,16 @@ export default function SettingsPage() {
         </div>
 
         {/* System Settings */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center mb-4">
             <Globe className="h-6 w-6 text-primary-600 mr-3" />
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               Configuración del Sistema
             </h3>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Zona Horaria
             </label>
             <select
@@ -248,8 +250,101 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Theme Settings */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="flex items-center mb-4">
+            <Palette className="h-6 w-6 text-primary-600 mr-3" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white dark:text-white">
+              Configuración de Apariencia
+            </h3>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-4">
+              Tema de la aplicación
+            </label>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {/* Light Theme */}
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                className={`p-4 border-2 rounded-lg transition-all duration-200 ${
+                  theme === 'light'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                <div className="flex flex-col items-center space-y-2">
+                  <Sun className={`h-8 w-8 ${
+                    theme === 'light' ? 'text-primary-600' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    theme === 'light' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300 dark:text-gray-300'
+                  }`}>
+                    Claro
+                  </span>
+                </div>
+              </button>
+
+              {/* Dark Theme */}
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                className={`p-4 border-2 rounded-lg transition-all duration-200 ${
+                  theme === 'dark'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                <div className="flex flex-col items-center space-y-2">
+                  <Moon className={`h-8 w-8 ${
+                    theme === 'dark' ? 'text-primary-600' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    theme === 'dark' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300 dark:text-gray-300'
+                  }`}>
+                    Oscuro
+                  </span>
+                </div>
+              </button>
+
+              {/* System Theme */}
+              <button
+                type="button"
+                onClick={() => setTheme('system')}
+                className={`p-4 border-2 rounded-lg transition-all duration-200 ${
+                  theme === 'system'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/50'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                }`}
+              >
+                <div className="flex flex-col items-center space-y-2">
+                  <Monitor className={`h-8 w-8 ${
+                    theme === 'system' ? 'text-primary-600' : 'text-gray-400'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    theme === 'system' ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300 dark:text-gray-300'
+                  }`}>
+                    Sistema
+                  </span>
+                </div>
+              </button>
+            </div>
+            
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+              {theme === 'system' 
+                ? 'Se ajustará automáticamente según la configuración de tu sistema'
+                : theme === 'dark'
+                  ? 'Modo oscuro activado'
+                  : 'Modo claro activado'
+              }
+            </p>
+          </div>
+        </div>
+
         {/* Save Button */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex justify-end">
             <button
               type="submit"
@@ -264,32 +359,32 @@ export default function SettingsPage() {
       </form>
 
       {/* Current Settings Summary */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Resumen de Configuración Actual
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-sm text-gray-600">Empresa</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.company_name || 'No configurado'}
             </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-sm text-gray-600">Horas Regulares</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.regular_hours_per_day}h/día
             </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-sm text-gray-600">Umbral Extra</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.overtime_threshold}h
             </div>
           </div>
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-sm text-gray-600">Multiplicador</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.overtime_multiplier}x
             </div>
           </div>

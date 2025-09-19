@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Calendar, Download, Filter, TrendingUp, Clock, Euro, Users } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, formatDateForDB } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 
 interface TimeEntry {
@@ -40,8 +40,8 @@ export default function ReportsPage() {
   })
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    end: new Date().toISOString().split('T')[0]
+    start: formatDateForDB(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+    end: formatDateForDB(new Date())
   })
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
 
@@ -56,11 +56,11 @@ export default function ReportsPage() {
   const loadReportData = async () => {
     try {
       // Obtener todas las entradas de tiempo en el rango de fechas
-      const { data: entries } = await supabase
+      const { data: entries, error } = await supabase
         .from('time_entries')
         .select(`
           *,
-          employees!inner(
+          employee:employees!inner(
             full_name,
             hourly_rate,
             departments(name)
@@ -69,6 +69,8 @@ export default function ReportsPage() {
         .gte('date', dateRange.start)
         .lte('date', dateRange.end)
         .order('date', { ascending: false })
+
+      console.log('📊 Report data query result:', { entries, error })
 
       if (entries) {
         setTimeEntries(entries)
@@ -169,12 +171,12 @@ export default function ReportsPage() {
       headers.join(','),
       ...timeEntries.map(entry => [
         entry.date,
-        entry.employee.full_name,
+        entry.employee?.full_name || 'N/A',
         formatTime(entry.clock_in),
         entry.clock_out ? formatTime(entry.clock_out) : 'En curso',
         entry.total_hours || 0,
         entry.overtime_hours || 0,
-        (entry.total_hours || 0) * entry.employee.hourly_rate
+        (entry.total_hours || 0) * (entry.employee?.hourly_rate || 0)
       ].join(','))
     ].join('\n')
 
@@ -202,15 +204,15 @@ export default function ReportsPage() {
   const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
   const totalOvertime = timeEntries.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0)
   const totalEarnings = timeEntries.reduce((sum, entry) => 
-    sum + ((entry.total_hours || 0) * entry.employee.hourly_rate), 0)
+    sum + ((entry.total_hours || 0) * (entry.employee?.hourly_rate || 0)), 0)
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Reportes y Estadísticas
             </h1>
             <p className="text-gray-600">
@@ -228,7 +230,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center space-x-2">
             <Calendar className="h-5 w-5 text-gray-400" />
@@ -238,7 +240,7 @@ export default function ReportsPage() {
               onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
               className="input-field"
             />
-            <span className="text-gray-500">a</span>
+            <span className="text-gray-500 dark:text-gray-400">a</span>
             <input
               type="date"
               value={dateRange.end}
@@ -296,7 +298,7 @@ export default function ReportsPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Empleados</p>
               <p className="text-2xl font-bold text-white">
-                {new Set(timeEntries.map(e => e.employee.full_name)).size}
+                {new Set(timeEntries.map(e => e.employee?.full_name).filter(Boolean)).size}
               </p>
             </div>
           </div>
@@ -306,8 +308,8 @@ export default function ReportsPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hours Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Horas por {selectedPeriod === 'daily' ? 'Día' : selectedPeriod === 'weekly' ? 'Semana' : 'Mes'}
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -326,8 +328,8 @@ export default function ReportsPage() {
         </div>
 
         {/* Department Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Horas por Departamento
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -353,30 +355,30 @@ export default function ReportsPage() {
       </div>
 
       {/* Top Employees */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Top Empleados por Horas
           </h3>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Empleado
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Horas Totales
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Ganancias
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
               {reportData.topEmployees.map((employee, index) => (
-                <tr key={employee.name} className="hover:bg-gray-50">
+                <tr key={employee.name} className="hover:bg-gray-50 dark:bg-gray-800">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8">
@@ -387,16 +389,16 @@ export default function ReportsPage() {
                         </div>
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {employee.name}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {employee.hours.toFixed(1)}h
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(employee.earnings)}
                   </td>
                 </tr>
@@ -407,30 +409,30 @@ export default function ReportsPage() {
       </div>
 
       {/* Recent Entries */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Entradas Recientes
           </h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
           {timeEntries.slice(0, 10).map((entry) => (
             <div key={entry.id} className="px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {entry.employee.full_name}
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
+                    {entry.employee?.full_name || 'N/A'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     {formatDate(entry.date)} - {formatTime(entry.clock_in)} a {entry.clock_out ? formatTime(entry.clock_out) : 'En curso'}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {entry.total_hours ? `${entry.total_hours.toFixed(1)}h` : 'En curso'}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {formatCurrency((entry.total_hours || 0) * entry.employee.hourly_rate)}
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {formatCurrency((entry.total_hours || 0) * (entry.employee?.hourly_rate || 0))}
                   </p>
                 </div>
               </div>

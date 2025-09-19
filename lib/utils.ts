@@ -39,3 +39,21 @@ export function formatCurrency(amount: number): string {
     currency: 'EUR'
   }).format(amount)
 }
+
+/**
+ * Convierte una fecha a string en formato YYYY-MM-DD usando la zona horaria local
+ * Evita problemas de zona horaria que ocurren con toISOString()
+ */
+export function formatDateForDB(date: Date = new Date()): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Obtiene la fecha de hoy en formato YYYY-MM-DD (zona horaria local)
+ */
+export function getTodayString(): string {
+  return formatDateForDB(new Date())
+}

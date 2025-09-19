@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Users, Calendar, TrendingUp } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, getTodayString, formatDateForDB } from '@/lib/utils'
 
 interface DashboardStats {
   totalHours: number
@@ -59,7 +59,7 @@ export default function DashboardPage() {
       if (!employee) return
 
       // Obtener estadísticas de tiempo
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayString()
       const startOfWeek = new Date()
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
       const startOfMonth = new Date()
@@ -78,14 +78,14 @@ export default function DashboardPage() {
         .from('time_entries')
         .select('total_hours')
         .eq('employee_id', employee.id)
-        .gte('date', startOfWeek.toISOString().split('T')[0])
+        .gte('date', formatDateForDB(startOfWeek))
 
       // Horas del mes
       const { data: monthEntries } = await supabase
         .from('time_entries')
         .select('total_hours')
         .eq('employee_id', employee.id)
-        .gte('date', startOfMonth.toISOString().split('T')[0])
+        .gte('date', formatDateForDB(startOfMonth))
 
       // Todas las horas
       const { data: allEntries } = await supabase
@@ -133,14 +133,14 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome message */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
           ¡Bienvenido de vuelta!
         </h1>
         <p className="text-gray-600">
           Aquí tienes un resumen de tu actividad laboral
         </p>
-        <div className="mt-4 text-sm text-gray-500">
+        <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           {formatDate(currentTime)} - {formatTime(currentTime)}
         </div>
       </div>
@@ -197,31 +197,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent time entries */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Registros Recientes
           </h3>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-800">
           {recentEntries.length > 0 ? (
             recentEntries.map((entry) => (
               <div key={entry.id} className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {formatDate(entry.date)}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
                       {formatTime(entry.clock_in)} - {entry.clock_out ? formatTime(entry.clock_out) : 'En curso'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {entry.total_hours ? `${entry.total_hours.toFixed(1)}h` : 'En curso'}
                     </p>
                     {entry.clock_out && (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {entry.total_hours && entry.total_hours > 8 
                           ? `+${(entry.total_hours - 8).toFixed(1)}h extra`
                           : 'Horario normal'
@@ -233,7 +233,7 @@ export default function DashboardPage() {
               </div>
             ))
           ) : (
-            <div className="px-6 py-8 text-center text-gray-500">
+            <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
               No hay registros de tiempo aún
             </div>
           )}
@@ -241,28 +241,28 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           Acciones Rápidas
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <a
             href="/dashboard/time"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <Clock className="h-6 w-6 text-primary-600 mr-3" />
             <span className="font-medium">Registrar Tiempo</span>
           </a>
           <a
             href="/dashboard/reports"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <TrendingUp className="h-6 w-6 text-primary-600 mr-3" />
             <span className="font-medium">Ver Reportes</span>
           </a>
           <a
             href="/dashboard/calendar"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           >
             <Calendar className="h-6 w-6 text-primary-600 mr-3" />
             <span className="font-medium">Calendario</span>
