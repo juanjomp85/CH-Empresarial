@@ -346,17 +346,7 @@ export default function TimeTrackingPage() {
             </div>
           )}
 
-          {/* Debug info */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mb-4 p-4 bg-gray-100 dark:bg-gray-800 rounded text-left text-xs">
-              <p><strong>Debug Info:</strong></p>
-              <p>User: {user ? '✅ Logged in' : '❌ Not logged in'}</p>
-              <p>Employee: {employee ? `✅ ID: ${employee.id}` : '❌ Not found'}</p>
-              <p>Loading: {loading ? '⏳ Yes' : '✅ No'}</p>
-              <p>Action Loading: {actionLoading ? '⏳ Yes' : '✅ No'}</p>
-              <p>Clock In: {currentSession.clockIn ? '✅ Yes' : '❌ No'}</p>
-            </div>
-          )}
+          {/* Debug info - Hidden as requested */}
 
           {/* Action buttons */}
           <div className="space-y-4">
