@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ChevronLeft, ChevronRight, Clock, Users } from 'lucide-react'
-import { formatDate, formatTime, formatDateForDB } from '@/lib/utils'
+import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
 
 interface TimeEntry {
   id: string
@@ -188,7 +188,7 @@ export default function CalendarPage() {
                   <div className="space-y-1">
                     <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
                       <Clock className="h-3 w-3 mr-1" />
-                      <span>{totalHours.toFixed(1)}h</span>
+                      <span>{formatDuration(totalHours)}</span>
                     </div>
                     <div className="flex items-center text-xs text-gray-600 dark:text-gray-300">
                       <Users className="h-3 w-3 mr-1" />
@@ -231,7 +231,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0).toFixed(1)}h
+              {formatDuration(timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0))}
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-300">Total de horas</div>
           </div>

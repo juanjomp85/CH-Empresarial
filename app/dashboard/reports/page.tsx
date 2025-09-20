@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Calendar, Download, Filter, TrendingUp, Clock, Euro, Users } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency, formatDateForDB } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, formatDateForDB, formatDuration } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 
 interface TimeEntry {
@@ -270,7 +270,7 @@ export default function ReportsPage() {
             <Clock className="h-8 w-8 text-white" />
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Total Horas</p>
-              <p className="text-2xl font-bold text-white">{totalHours.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-white">{formatDuration(totalHours)}</p>
             </div>
           </div>
         </div>
@@ -279,7 +279,7 @@ export default function ReportsPage() {
             <TrendingUp className="h-8 w-8 text-white" />
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Horas Extra</p>
-              <p className="text-2xl font-bold text-white">{totalOvertime.toFixed(1)}h</p>
+              <p className="text-2xl font-bold text-white">{formatDuration(totalOvertime)}</p>
             </div>
           </div>
         </div>
@@ -396,7 +396,7 @@ export default function ReportsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {employee.hours.toFixed(1)}h
+                    {formatDuration(employee.hours)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatCurrency(employee.earnings)}
@@ -429,7 +429,7 @@ export default function ReportsPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {entry.total_hours ? `${entry.total_hours.toFixed(1)}h` : 'En curso'}
+                    {entry.total_hours ? formatDuration(entry.total_hours) : 'En curso'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {formatCurrency((entry.total_hours || 0) * (entry.employee?.hourly_rate || 0))}

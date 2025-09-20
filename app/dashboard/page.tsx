@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Users, Calendar, TrendingUp } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency, getTodayString, formatDateForDB } from '@/lib/utils'
+import { formatDate, formatTime, formatCurrency, getTodayString, formatDateForDB, formatDuration } from '@/lib/utils'
 
 interface DashboardStats {
   totalHours: number
@@ -153,7 +153,7 @@ export default function DashboardPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Hoy</p>
               <p className="text-2xl font-bold text-white">
-                {stats.todayHours.toFixed(1)}h
+                {formatDuration(stats.todayHours)}
               </p>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function DashboardPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Esta Semana</p>
               <p className="text-2xl font-bold text-white">
-                {stats.weeklyHours.toFixed(1)}h
+                {formatDuration(stats.weeklyHours)}
               </p>
             </div>
           </div>
@@ -177,7 +177,7 @@ export default function DashboardPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Este Mes</p>
               <p className="text-2xl font-bold text-white">
-                {stats.monthlyHours.toFixed(1)}h
+                {formatDuration(stats.monthlyHours)}
               </p>
             </div>
           </div>
@@ -189,7 +189,7 @@ export default function DashboardPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Total</p>
               <p className="text-2xl font-bold text-white">
-                {stats.totalHours.toFixed(1)}h
+                {formatDuration(stats.totalHours)}
               </p>
             </div>
           </div>
@@ -218,12 +218,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {entry.total_hours ? `${entry.total_hours.toFixed(1)}h` : 'En curso'}
+                      {entry.total_hours ? formatDuration(entry.total_hours) : 'En curso'}
                     </p>
                     {entry.clock_out && (
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {entry.total_hours && entry.total_hours > 8 
-                          ? `+${(entry.total_hours - 8).toFixed(1)}h extra`
+                          ? `+${formatDuration(entry.total_hours - 8)} extra`
                           : 'Horario normal'
                         }
                       </p>

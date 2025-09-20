@@ -57,3 +57,39 @@ export function formatDateForDB(date: Date = new Date()): string {
 export function getTodayString(): string {
   return formatDateForDB(new Date())
 }
+
+/**
+ * Formatea horas decimales a formato HH:MM
+ * @param hours - Horas en formato decimal (ej: 1.5 = 1 hora 30 minutos)
+ * @returns String en formato HH:MM (ej: "01:30")
+ */
+export function formatDuration(hours: number): string {
+  if (!hours || isNaN(hours)) return "00:00"
+  
+  const totalMinutes = Math.round(hours * 60)
+  const hrs = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+}
+
+/**
+ * Formatea horas decimales a formato legible (ej: "1h 30m")
+ * @param hours - Horas en formato decimal
+ * @returns String legible (ej: "1h 30m" o "30m" si es menos de 1 hora)
+ */
+export function formatDurationReadable(hours: number): string {
+  if (!hours || isNaN(hours)) return "0m"
+  
+  const totalMinutes = Math.round(hours * 60)
+  const hrs = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  
+  if (hrs === 0) {
+    return `${mins}m`
+  } else if (mins === 0) {
+    return `${hrs}h`
+  } else {
+    return `${hrs}h ${mins}m`
+  }
+}

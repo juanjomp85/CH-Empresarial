@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Play, Pause, Square, Coffee } from 'lucide-react'
-import { formatTime, formatDate, calculateHours, getTodayString } from '@/lib/utils'
+import { formatTime, formatDate, calculateHours, getTodayString, formatDuration } from '@/lib/utils'
 
 interface TimeEntry {
   id: string
@@ -338,7 +338,7 @@ export default function TimeTrackingPage() {
           {currentSession.clockIn && (
             <div className="mb-8">
               <div className="text-3xl font-bold text-primary-600 mb-2">
-                {getCurrentWorkTime().toFixed(1)}h
+                {formatDuration(getCurrentWorkTime())}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-300">
                 Tiempo trabajado hoy
@@ -415,7 +415,7 @@ export default function TimeTrackingPage() {
                   Jornada completada
                 </div>
                 <div className="text-2xl font-bold text-green-600">
-                  {todayEntry.total_hours?.toFixed(1)}h trabajadas
+                  {formatDuration(todayEntry.total_hours || 0)} trabajadas
                 </div>
               </div>
             )}
@@ -447,7 +447,7 @@ export default function TimeTrackingPage() {
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-sm text-gray-600 dark:text-gray-300">Total</div>
               <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                {todayEntry.total_hours ? `${todayEntry.total_hours.toFixed(1)}h` : 'En curso'}
+                {todayEntry.total_hours ? formatDuration(todayEntry.total_hours) : 'En curso'}
               </div>
             </div>
           </div>
