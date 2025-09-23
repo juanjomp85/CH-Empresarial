@@ -5,19 +5,34 @@ function createSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  // Log de debugging para producción
+  if (typeof window !== 'undefined') {
+    console.log('🔧 Supabase Client Debug Info:')
+    console.log('- URL configured:', !!supabaseUrl)
+    console.log('- Key configured:', !!supabaseAnonKey)
+    console.log('- Environment:', process.env.NODE_ENV)
+    if (supabaseUrl && !supabaseUrl.includes('placeholder')) {
+      console.log('- URL domain:', new URL(supabaseUrl).hostname)
+    }
+  }
+
   // Durante el build, si las variables no están configuradas, usar valores mock
   if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseAnonKey)) {
-    console.warn('Variables de entorno de Supabase no configuradas durante el build')
+    console.warn('⚠️ Variables de entorno de Supabase no configuradas durante el build')
     return createClient('https://placeholder.supabase.co', 'placeholder-key')
   }
 
   // Validaciones con mensajes de error detallados
   if (!supabaseUrl) {
-    throw new Error('Falta la variable de entorno NEXT_PUBLIC_SUPABASE_URL')
+    const error = 'Falta la variable de entorno NEXT_PUBLIC_SUPABASE_URL'
+    console.error('❌ Supabase Error:', error)
+    throw new Error(error)
   }
 
   if (!supabaseAnonKey) {
-    throw new Error('Falta la variable de entorno NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    const error = 'Falta la variable de entorno NEXT_PUBLIC_SUPABASE_ANON_KEY'
+    console.error('❌ Supabase Error:', error)
+    throw new Error(error)
   }
 
   // Validar formato de URL solo si no es un placeholder
@@ -25,11 +40,19 @@ function createSupabaseClient() {
     try {
       new URL(supabaseUrl)
     } catch (error) {
-      throw new Error(`NEXT_PUBLIC_SUPABASE_URL no es una URL válida: ${supabaseUrl}`)
+      const errorMsg = `NEXT_PUBLIC_SUPABASE_URL no es una URL válida: ${supabaseUrl}`
+      console.error('❌ Supabase URL Error:', errorMsg)
+      throw new Error(errorMsg)
     }
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey)
+  const client = createClient(supabaseUrl, supabaseAnonKey)
+  
+  if (typeof window !== 'undefined') {
+    console.log('✅ Supabase client created successfully')
+  }
+
+  return client
 }
 
 export const supabase = createSupabaseClient()
@@ -77,3 +100,4 @@ export interface Position {
   description?: string
   created_at: string
 }
+
