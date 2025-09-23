@@ -180,7 +180,8 @@ export default function TimeTrackingPage() {
       alert('¡Entrada registrada correctamente!')
     } catch (error) {
       console.error('❌ Error clocking in:', error)
-      alert(`Error al registrar entrada: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+      alert(`Error al registrar entrada: ${errorMessage}`)
     } finally {
       setActionLoading(false)
     }
