@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+
+// Evitar prerendering estático para páginas que usan Supabase
+export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Users, Calendar, TrendingUp } from 'lucide-react'

@@ -1,9 +1,38 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Función para crear el cliente de Supabase con validaciones
+function createSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  // Durante el build, si las variables no están configuradas, usar valores mock
+  if (process.env.NODE_ENV === 'production' && (!supabaseUrl || !supabaseAnonKey)) {
+    console.warn('Variables de entorno de Supabase no configuradas durante el build')
+    return createClient('https://placeholder.supabase.co', 'placeholder-key')
+  }
+
+  // Validaciones con mensajes de error detallados
+  if (!supabaseUrl) {
+    throw new Error('Falta la variable de entorno NEXT_PUBLIC_SUPABASE_URL')
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error('Falta la variable de entorno NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  }
+
+  // Validar formato de URL solo si no es un placeholder
+  if (!supabaseUrl.includes('placeholder')) {
+    try {
+      new URL(supabaseUrl)
+    } catch (error) {
+      throw new Error(`NEXT_PUBLIC_SUPABASE_URL no es una URL válida: ${supabaseUrl}`)
+    }
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey)
+}
+
+export const supabase = createSupabaseClient()
 
 // Tipos para TypeScript
 export interface Employee {

@@ -1,5 +1,8 @@
 'use client'
 
+// Evitar prerendering estático para páginas que usan Supabase
+export const dynamic = 'force-dynamic'
+
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
