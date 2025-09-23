@@ -84,6 +84,8 @@ export default function TimeTrackingPage() {
 
       console.log('👤 Employee query result:', { emp, empError })
 
+      let currentEmployee = emp
+
       if (!emp) {
         console.log('🆕 Creating new employee for user:', user?.id)
         // Si no existe el empleado, crearlo
@@ -102,6 +104,7 @@ export default function TimeTrackingPage() {
 
         console.log('🆕 New employee created:', { newEmp, newEmpError })
         if (newEmpError) throw newEmpError
+        currentEmployee = newEmp
         setEmployee(newEmp)
       } else {
         console.log('✅ Employee found:', emp)
@@ -113,7 +116,7 @@ export default function TimeTrackingPage() {
       const { data: entry } = await supabase
         .from('time_entries')
         .select('*')
-        .eq('employee_id', emp?.id || newEmp?.id)
+        .eq('employee_id', currentEmployee?.id)
         .eq('date', today)
         .single()
 
