@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Calendar, Download, Filter, TrendingUp, Clock, Euro, Users } from 'lucide-react'
@@ -47,13 +47,9 @@ export default function ReportsPage() {
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
 
-  useEffect(() => {
-    if (user) {
-      loadReportData()
-    }
-  }, [user, dateRange])
+  const loadReportData = useCallback(async () => {
+    if (!user) return
 
-  const loadReportData = async () => {
     try {
       // Obtener todas las entradas de tiempo en el rango de fechas
       const { data: entries, error } = await supabase
@@ -81,7 +77,12 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, dateRange])
+
+  useEffect(() => {
+    loadReportData()
+  }, [loadReportData])
+
 
   const processReportData = (entries: any[]) => {
     // Procesar datos diarios

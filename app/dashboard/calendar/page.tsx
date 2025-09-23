@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { ChevronLeft, ChevronRight, Clock, Users } from 'lucide-react'
@@ -23,13 +23,9 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (user) {
-      loadTimeEntries()
-    }
-  }, [user, currentDate])
+  const loadTimeEntries = useCallback(async () => {
+    if (!user) return
 
-  const loadTimeEntries = async () => {
     try {
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
@@ -52,7 +48,11 @@ export default function CalendarPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, currentDate])
+
+  useEffect(() => {
+    loadTimeEntries()
+  }, [loadTimeEntries])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()

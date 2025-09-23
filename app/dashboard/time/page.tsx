@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Play, Pause, Square, Coffee } from 'lucide-react'
@@ -37,42 +37,7 @@ export default function TimeTrackingPage() {
   const [actionLoading, setActionLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  useEffect(() => {
-    if (user) {
-      console.log('🔄 User changed, loading employee data:', user.id)
-      loadEmployeeData()
-    } else {
-      console.log('❌ No user found')
-    }
-  }, [user])
-
-  // Test Supabase connection on mount
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        console.log('🔗 Testing Supabase connection...')
-        const { data, error } = await supabase.from('departments').select('count').limit(1)
-        if (error) {
-          console.error('❌ Supabase connection failed:', error)
-        } else {
-          console.log('✅ Supabase connection successful')
-        }
-      } catch (error) {
-        console.error('❌ Supabase connection test failed:', error)
-      }
-    }
-    testConnection()
-  }, [])
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
-
-  const loadEmployeeData = async () => {
+  const loadEmployeeData = useCallback(async () => {
     console.log('🔄 Loading employee data for user:', user?.id)
     try {
       // Obtener empleado actual
@@ -133,7 +98,43 @@ export default function TimeTrackingPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      console.log('🔄 User changed, loading employee data:', user.id)
+      loadEmployeeData()
+    } else {
+      console.log('❌ No user found')
+    }
+  }, [user, loadEmployeeData])
+
+  // Test Supabase connection on mount
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        console.log('🔗 Testing Supabase connection...')
+        const { data, error } = await supabase.from('departments').select('count').limit(1)
+        if (error) {
+          console.error('❌ Supabase connection failed:', error)
+        } else {
+          console.log('✅ Supabase connection successful')
+        }
+      } catch (error) {
+        console.error('❌ Supabase connection test failed:', error)
+      }
+    }
+    testConnection()
+  }, [])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [])
+
 
   const handleClockIn = async () => {
     console.log('🔄 handleClockIn called')

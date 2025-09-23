@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './AuthProvider'
 
@@ -40,12 +40,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }
 
   // Resolver tema actual
-  const resolveTheme = (currentTheme: Theme): 'light' | 'dark' => {
+  const resolveTheme = useCallback((currentTheme: Theme): 'light' | 'dark' => {
     if (currentTheme === 'system') {
       return getSystemTheme()
     }
     return currentTheme
-  }
+  }, [])
 
   // Aplicar tema al DOM
   const applyTheme = (resolvedTheme: 'light' | 'dark') => {
@@ -91,7 +91,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
 
     loadTheme()
-  }, [user])
+  }, [user, resolveTheme])
 
   // Escuchar cambios en la preferencia del sistema
   useEffect(() => {

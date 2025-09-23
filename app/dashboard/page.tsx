@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Users, Calendar, TrendingUp } from 'lucide-react'
@@ -33,11 +33,72 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
 
-  useEffect(() => {
-    if (user) {
-      loadDashboardData()
+  const loadDashboardData = useCallback(async () => {
+    if (!user) return
+
+    try {
+      // Obtener empleado
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!employee) return
+
+      const today = getTodayString()
+      
+      // Obtener todas las entradas de tiempo del empleado
+      const { data: timeEntries } = await supabase
+        .from('time_entries')
+        .select('*')
+        .eq('employee_id', employee.id)
+        .order('date', { ascending: false })
+
+      if (timeEntries) {
+        // Para entradas recientes, tomar solo las últimas 5
+        setRecentEntries(timeEntries.slice(0, 5))
+        
+        // Calcular estadísticas
+        const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
+        const todayEntry = timeEntries.find(entry => entry.date === today)
+        const todayHours = todayEntry?.total_hours || 0
+        
+        // Calcular horas de esta semana
+        const weekStart = new Date()
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+        const weekEntries = timeEntries.filter(entry => {
+          const entryDate = new Date(entry.date)
+          return entryDate >= weekStart
+        })
+        const weeklyHours = weekEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
+        
+        // Calcular horas de este mes
+        const monthStart = new Date()
+        monthStart.setDate(1)
+        const monthEntries = timeEntries.filter(entry => {
+          const entryDate = new Date(entry.date)
+          return entryDate >= monthStart
+        })
+        const monthlyHours = monthEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
+        
+        setStats({
+          totalHours,
+          todayHours,
+          weeklyHours,
+          monthlyHours
+        })
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
+    } finally {
+      setLoading(false)
     }
   }, [user])
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [loadDashboardData])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,80 +108,6 @@ export default function DashboardPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const loadDashboardData = async () => {
-    try {
-      // Obtener empleado actual
-      const { data: employee } = await supabase
-        .from('employees')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single()
-
-      if (!employee) return
-
-      // Obtener estadísticas de tiempo
-      const today = getTodayString()
-      const startOfWeek = new Date()
-      startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-
-      // Horas de hoy
-      const { data: todayEntry } = await supabase
-        .from('time_entries')
-        .select('total_hours')
-        .eq('employee_id', employee.id)
-        .eq('date', today)
-        .single()
-
-      // Horas de la semana
-      const { data: weekEntries } = await supabase
-        .from('time_entries')
-        .select('total_hours')
-        .eq('employee_id', employee.id)
-        .gte('date', formatDateForDB(startOfWeek))
-
-      // Horas del mes
-      const { data: monthEntries } = await supabase
-        .from('time_entries')
-        .select('total_hours')
-        .eq('employee_id', employee.id)
-        .gte('date', formatDateForDB(startOfMonth))
-
-      // Todas las horas
-      const { data: allEntries } = await supabase
-        .from('time_entries')
-        .select('total_hours')
-        .eq('employee_id', employee.id)
-
-      // Calcular totales
-      const todayHours = todayEntry?.total_hours || 0
-      const weeklyHours = weekEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0
-      const monthlyHours = monthEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0
-      const totalHours = allEntries?.reduce((sum, entry) => sum + (entry.total_hours || 0), 0) || 0
-
-      setStats({
-        totalHours,
-        todayHours,
-        weeklyHours,
-        monthlyHours
-      })
-
-      // Obtener entradas recientes
-      const { data: recent } = await supabase
-        .from('time_entries')
-        .select('*')
-        .eq('employee_id', employee.id)
-        .order('date', { ascending: false })
-        .limit(5)
-
-      setRecentEntries(recent || [])
-    } catch (error) {
-      console.error('Error loading dashboard data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) {
     return (
