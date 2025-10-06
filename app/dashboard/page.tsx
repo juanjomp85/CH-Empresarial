@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { Clock, Users, Calendar, TrendingUp } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency, getTodayString, formatDateForDB, formatDuration } from '@/lib/utils'
+import { formatDate, formatTime, getTodayString, formatDateForDB, formatDuration } from '@/lib/utils'
 
 interface DashboardStats {
   totalHours: number
