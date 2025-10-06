@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { Save, Building, Clock, Euro, Globe, Palette, Sun, Moon, Monitor } from 'lucide-react'
+import AdminRoute from '@/components/auth/AdminRoute'
 
 interface CompanySettings {
   id: string
@@ -101,14 +102,17 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-      </div>
+      <AdminRoute>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        </div>
+      </AdminRoute>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <AdminRoute>
+      <div className="space-y-6">
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -393,6 +397,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AdminRoute>
   )
 }

@@ -13,27 +13,45 @@ import {
   FileText,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useRole } from '@/lib/hooks/useRole'
 
-const navigation = [
+interface NavigationItem {
+  name: string
+  href: string
+  icon: any
+  adminOnly?: boolean
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Mi Tiempo', href: '/dashboard/time', icon: Clock },
-  { name: 'Empleados', href: '/dashboard/employees', icon: Users },
+  { name: 'Empleados', href: '/dashboard/employees', icon: Users, adminOnly: true },
   { name: 'Reportes', href: '/dashboard/reports', icon: FileText },
   { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar },
-  { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
+  { name: 'Configuración', href: '/dashboard/settings', icon: Settings, adminOnly: true },
 ]
 
 export default function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const { signOut } = useAuth()
+  const { isAdmin, loading: roleLoading } = useRole()
 
   const handleSignOut = async () => {
     await signOut()
   }
+
+  // Filtrar navegación según el rol del usuario
+  const filteredNavigation = navigation.filter(item => {
+    // Si el item no requiere permisos de admin, mostrarlo
+    if (!item.adminOnly) return true
+    // Si requiere admin, solo mostrarlo si el usuario es admin
+    return isAdmin
+  })
 
   return (
     <>
@@ -67,7 +85,17 @@ export default function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
+            {/* Indicador de rol de administrador */}
+            {isAdmin && (
+              <div className="mb-4 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <div className="flex items-center text-amber-800 dark:text-amber-200">
+                  <Shield className="h-4 w-4 mr-2" />
+                  <span className="text-xs font-semibold">Administrador</span>
+                </div>
+              </div>
+            )}
+
+            {filteredNavigation.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link

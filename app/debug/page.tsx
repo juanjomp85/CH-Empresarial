@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
+import AdminRoute from '@/components/auth/AdminRoute'
 
 // Evitar prerendering estático para páginas que usan Supabase
 export const dynamic = 'force-dynamic'
@@ -87,14 +88,17 @@ export default function DebugPage() {
 
   if (isLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <AdminRoute>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </AdminRoute>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
+    <AdminRoute>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -209,6 +213,7 @@ export default function DebugPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </AdminRoute>
   )
 }
