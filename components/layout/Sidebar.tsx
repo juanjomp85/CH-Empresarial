@@ -18,18 +18,18 @@ import {
 import { useAuth } from '@/components/providers/AuthProvider'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3, adminOnly: false },
-  { name: 'Mi Tiempo', href: '/dashboard/time', icon: Clock, adminOnly: false },
-  { name: 'Empleados', href: '/dashboard/employees', icon: Users, adminOnly: true },
-  { name: 'Reportes', href: '/dashboard/reports', icon: FileText, adminOnly: false },
-  { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar, adminOnly: false },
-  { name: 'Configuración', href: '/dashboard/settings', icon: Settings, adminOnly: true },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Mi Tiempo', href: '/dashboard/time', icon: Clock },
+  { name: 'Empleados', href: '/dashboard/employees', icon: Users },
+  { name: 'Reportes', href: '/dashboard/reports', icon: FileText },
+  { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar },
+  { name: 'Configuración', href: '/dashboard/settings', icon: Settings },
 ]
 
 export default function Sidebar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { signOut, isAdmin } = useAuth()
+  const { signOut } = useAuth()
 
   const handleSignOut = async () => {
     await signOut()
@@ -67,27 +67,25 @@ export default function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation
-              .filter((item) => !item.adminOnly || isAdmin)
-              .map((item) => {
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
-                      isActive
-                        ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white"
-                    )}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </Link>
-                )
-              })}
+            {navigation.map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200",
+                    isActive
+                      ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white"
+                  )}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <item.icon className="mr-3 h-5 w-5" />
+                  {item.name}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* Sign out button */}

@@ -3,11 +3,10 @@
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { usePathname } from 'next/navigation'
-import Link from 'next/link'
-import { Bell, User, Sun, Moon, Bug, Settings } from 'lucide-react'
+import { Bell, User, Sun, Moon, Bug } from 'lucide-react'
 
 export default function Header() {
-  const { user, isAdmin } = useAuth()
+  const { user } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const pathname = usePathname()
 
@@ -54,16 +53,14 @@ export default function Header() {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Settings button (admin only) */}
-            {isAdmin && (
-              <Link
-                href="/dashboard/settings"
-                className="p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
-                title="Configuración"
-              >
-                <Settings className="h-5 w-5" />
-              </Link>
-            )}
+            {/* Debug button (temporary) */}
+            <a
+              href="/debug"
+              className="p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
+              title="Diagnóstico de conexión"
+            >
+              <Bug className="h-5 w-5" />
+            </a>
             
             {/* Theme toggle */}
             <button 
