@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
-import { Save, Building, Clock, Euro, Globe, Palette, Sun, Moon, Monitor } from 'lucide-react'
+import { Save, Building, Clock, Globe, Palette, Sun, Moon, Monitor } from 'lucide-react'
 import AdminRoute from '@/components/auth/AdminRoute'
 
 interface CompanySettings {
@@ -15,7 +15,6 @@ interface CompanySettings {
   company_name: string
   regular_hours_per_day: number
   overtime_threshold: number
-  overtime_multiplier: number
   timezone: string
 }
 
@@ -27,7 +26,6 @@ export default function SettingsPage() {
     company_name: '',
     regular_hours_per_day: 8,
     overtime_threshold: 8,
-    overtime_multiplier: 1.5,
     timezone: 'Europe/Madrid'
   })
   const [loading, setLoading] = useState(true)
@@ -67,7 +65,6 @@ export default function SettingsPage() {
             company_name: settings.company_name,
             regular_hours_per_day: settings.regular_hours_per_day,
             overtime_threshold: settings.overtime_threshold,
-            overtime_multiplier: settings.overtime_multiplier,
             timezone: settings.timezone
           })
           .eq('id', settings.id)
@@ -81,7 +78,6 @@ export default function SettingsPage() {
             company_name: settings.company_name,
             regular_hours_per_day: settings.regular_hours_per_day,
             overtime_threshold: settings.overtime_threshold,
-            overtime_multiplier: settings.overtime_multiplier,
             timezone: settings.timezone
           })
           .select()
@@ -195,34 +191,6 @@ export default function SettingsPage() {
                 Horas a partir de las cuales se consideran horas extra
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Payroll Settings */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-          <div className="flex items-center mb-4">
-            <Euro className="h-6 w-6 text-primary-600 mr-3" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-              Configuración de Nómina
-            </h3>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Multiplicador de Horas Extra
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              min="1"
-              max="3"
-              value={settings.overtime_multiplier}
-              onChange={(e) => setSettings(prev => ({ ...prev, overtime_multiplier: parseFloat(e.target.value) || 1.5 }))}
-              className="input-field"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Factor por el cual se multiplica la tarifa por hora para calcular horas extra
-            </p>
           </div>
         </div>
 
@@ -370,29 +338,23 @@ export default function SettingsPage() {
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Resumen de Configuración Actual
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-sm text-gray-600">Empresa</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Empresa</div>
             <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.company_name || 'No configurado'}
             </div>
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-sm text-gray-600">Horas Regulares</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Horas Regulares</div>
             <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.regular_hours_per_day}h/día
             </div>
           </div>
           <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-sm text-gray-600">Umbral Extra</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Umbral Extra</div>
             <div className="text-lg font-semibold text-gray-900 dark:text-white">
               {settings.overtime_threshold}h
-            </div>
-          </div>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-sm text-gray-600">Multiplicador</div>
-            <div className="text-lg font-semibold text-gray-900 dark:text-white">
-              {settings.overtime_multiplier}x
             </div>
           </div>
         </div>

@@ -33,13 +33,6 @@ export function calculateOvertimeHours(totalHours: number, regularHours: number 
   return Math.max(0, totalHours - regularHours)
 }
 
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount)
-}
-
 /**
  * Convierte una fecha a string en formato YYYY-MM-DD usando la zona horaria local
  * Evita problemas de zona horaria que ocurren con toISOString()

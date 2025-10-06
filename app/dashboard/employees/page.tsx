@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
 export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Plus, Search, Edit, Trash2, User, Mail, Clock, Euro } from 'lucide-react'
-import { formatDate, formatCurrency } from '@/lib/utils'
+import { Plus, Search, Edit, Trash2, User, Mail, Clock } from 'lucide-react'
+import { formatDate } from '@/lib/utils'
 import AdminRoute from '@/components/auth/AdminRoute'
 
 interface Employee {
@@ -16,7 +16,6 @@ interface Employee {
   full_name: string
   position: string
   department: string
-  hourly_rate: number
   is_active: boolean
   hire_date: string
   created_at: string
@@ -31,7 +30,6 @@ interface Position {
   id: string
   title: string
   department_id: string
-  hourly_rate: number
 }
 
 export default function EmployeesPage() {
@@ -55,7 +53,7 @@ export default function EmployeesPage() {
         .from('employees')
         .select(`
           *,
-          positions(title, hourly_rate),
+          positions(title),
           departments(name)
         `)
 
@@ -66,7 +64,6 @@ export default function EmployeesPage() {
           full_name: emp.full_name,
           position: emp.positions?.title || 'Sin asignar',
           department: emp.departments?.name || 'Sin asignar',
-          hourly_rate: emp.positions?.hourly_rate || emp.hourly_rate,
           is_active: emp.is_active,
           hire_date: emp.hire_date,
           created_at: emp.created_at
@@ -196,12 +193,12 @@ export default function EmployeesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
           <div className="flex items-center">
             <User className="h-8 w-8 text-primary-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Total Empleados</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total Empleados</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{employees.length}</p>
             </div>
           </div>
@@ -210,24 +207,9 @@ export default function EmployeesPage() {
           <div className="flex items-center">
             <Clock className="h-8 w-8 text-green-600" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Activos</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Activos</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {employees.filter(emp => emp.is_active).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <Euro className="h-8 w-8 text-yellow-600" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Tarifa Promedio</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {formatCurrency(
-                  employees.length > 0 
-                    ? employees.reduce((sum, emp) => sum + emp.hourly_rate, 0) / employees.length
-                    : 0
-                )}
               </p>
             </div>
           </div>
@@ -253,9 +235,6 @@ export default function EmployeesPage() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Departamento
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tarifa/Hora
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Estado
@@ -292,9 +271,6 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {employee.department}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {formatCurrency(employee.hourly_rate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -382,7 +358,6 @@ function EmployeeForm({
     full_name: employee?.full_name || '',
     position_id: '',
     department_id: '',
-    hourly_rate: employee?.hourly_rate || 0,
     is_active: employee?.is_active ?? true
   })
   const [loading, setLoading] = useState(false)
@@ -401,7 +376,6 @@ function EmployeeForm({
             full_name: formData.full_name,
             position_id: formData.position_id || null,
             department_id: formData.department_id || null,
-            hourly_rate: formData.hourly_rate,
             is_active: formData.is_active
           })
           .eq('id', employee.id)
@@ -416,7 +390,6 @@ function EmployeeForm({
             full_name: formData.full_name,
             position_id: formData.position_id || null,
             department_id: formData.department_id || null,
-            hourly_rate: formData.hourly_rate,
             is_active: formData.is_active
           })
 
@@ -498,19 +471,6 @@ function EmployeeForm({
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tarifa por Hora (€)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.hourly_rate}
-              onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: parseFloat(e.target.value) || 0 }))}
-              className="input-field"
-            />
           </div>
           <div className="flex items-center">
             <input

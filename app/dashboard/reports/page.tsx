@@ -6,8 +6,8 @@ import { useEffect, useState, useCallback } from 'react'
 export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Calendar, Download, Filter, TrendingUp, Clock, Euro, Users } from 'lucide-react'
-import { formatDate, formatTime, formatCurrency, formatDateForDB, formatDuration } from '@/lib/utils'
+import { Calendar, Download, Filter, TrendingUp, Clock, Users } from 'lucide-react'
+import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 
 interface TimeEntry {
@@ -19,7 +19,6 @@ interface TimeEntry {
   overtime_hours: number | null
   employee: {
     full_name: string
-    hourly_rate: number
   }
 }
 
@@ -28,7 +27,7 @@ interface ReportData {
   weeklyHours: Array<{ week: string; hours: number; overtime: number }>
   monthlyHours: Array<{ month: string; hours: number; overtime: number }>
   departmentHours: Array<{ department: string; hours: number; employees: number }>
-  topEmployees: Array<{ name: string; hours: number; earnings: number }>
+  topEmployees: Array<{ name: string; hours: number }>
 }
 
 export default function ReportsPage() {
@@ -61,7 +60,6 @@ export default function ReportsPage() {
           *,
           employee:employees!inner(
             full_name,
-            hourly_rate,
             departments(name)
           )
         `)
@@ -103,7 +101,6 @@ export default function ReportsPage() {
       
       const hours = entry.total_hours || 0
       const overtime = entry.overtime_hours || 0
-      const earnings = hours * (entry.employees.hourly_rate || 0)
       const department = entry.employees.departments?.name || 'Sin departamento'
       const employeeName = entry.employees.full_name
 
@@ -141,11 +138,10 @@ export default function ReportsPage() {
 
       // Top empleados
       if (!employeeMap.has(employeeName)) {
-        employeeMap.set(employeeName, { name: employeeName, hours: 0, earnings: 0 })
+        employeeMap.set(employeeName, { name: employeeName, hours: 0 })
       }
       const emp = employeeMap.get(employeeName)
       emp.hours += hours
-      emp.earnings += earnings
     })
 
     // Convertir mapas a arrays y ordenar
@@ -170,7 +166,7 @@ export default function ReportsPage() {
   }
 
   const exportToCSV = () => {
-    const headers = ['Fecha', 'Empleado', 'Entrada', 'Salida', 'Horas Totales', 'Horas Extra', 'Ganancias']
+    const headers = ['Fecha', 'Empleado', 'Entrada', 'Salida', 'Horas Totales', 'Horas Extra']
     const csvContent = [
       headers.join(','),
       ...timeEntries.map(entry => [
@@ -179,8 +175,7 @@ export default function ReportsPage() {
         formatTime(entry.clock_in),
         entry.clock_out ? formatTime(entry.clock_out) : 'En curso',
         entry.total_hours || 0,
-        entry.overtime_hours || 0,
-        (entry.total_hours || 0) * (entry.employee?.hourly_rate || 0)
+        entry.overtime_hours || 0
       ].join(','))
     ].join('\n')
 
@@ -207,8 +202,6 @@ export default function ReportsPage() {
 
   const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
   const totalOvertime = timeEntries.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0)
-  const totalEarnings = timeEntries.reduce((sum, entry) => 
-    sum + ((entry.total_hours || 0) * (entry.employee?.hourly_rate || 0)), 0)
 
   return (
     <div className="space-y-6">
@@ -268,7 +261,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="stat-card">
           <div className="flex items-center">
             <Clock className="h-8 w-8 text-white" />
@@ -284,15 +277,6 @@ export default function ReportsPage() {
             <div className="ml-4">
               <p className="text-sm font-medium text-primary-100">Horas Extra</p>
               <p className="text-2xl font-bold text-white">{formatDuration(totalOvertime)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center">
-            <Euro className="h-8 w-8 text-white" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-primary-100">Total Ganancias</p>
-              <p className="text-2xl font-bold text-white">{formatCurrency(totalEarnings)}</p>
             </div>
           </div>
         </div>
@@ -375,9 +359,6 @@ export default function ReportsPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Horas Totales
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Ganancias
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
@@ -401,9 +382,6 @@ export default function ReportsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {formatDuration(employee.hours)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {formatCurrency(employee.earnings)}
                   </td>
                 </tr>
               ))}
@@ -435,9 +413,11 @@ export default function ReportsPage() {
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
                     {entry.total_hours ? formatDuration(entry.total_hours) : 'En curso'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {formatCurrency((entry.total_hours || 0) * (entry.employee?.hourly_rate || 0))}
-                  </p>
+                  {entry.overtime_hours && entry.overtime_hours > 0 ? (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      +{formatDuration(entry.overtime_hours)} extra
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>

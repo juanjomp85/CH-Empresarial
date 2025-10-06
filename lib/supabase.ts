@@ -64,7 +64,6 @@ export interface Employee {
   full_name: string
   position: string
   department: string
-  hourly_rate: number
   is_active: boolean
   created_at: string
   updated_at: string
@@ -96,7 +95,6 @@ export interface Position {
   id: string
   title: string
   department_id: string
-  hourly_rate: number
   description?: string
   created_at: string
 }
