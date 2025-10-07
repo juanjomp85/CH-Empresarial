@@ -6,9 +6,8 @@ import { useEffect, useState, useCallback } from 'react'
 export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { Calendar, Download, Filter, TrendingUp, Clock, Users } from 'lucide-react'
+import { Calendar, Download, TrendingUp, Clock, Users } from 'lucide-react'
 import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
 
 interface TimeEntry {
   id: string
@@ -45,9 +44,6 @@ export default function ReportsPage() {
     start: formatDateForDB(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
     end: formatDateForDB(new Date())
   })
-  const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily')
-
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
 
   const loadReportData = useCallback(async () => {
     if (!user) return
@@ -196,10 +192,6 @@ export default function ReportsPage() {
     )
   }
 
-  const currentData = selectedPeriod === 'daily' ? reportData.dailyHours :
-                     selectedPeriod === 'weekly' ? reportData.weeklyHours :
-                     reportData.monthlyHours
-
   const totalHours = timeEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
   const totalOvertime = timeEntries.reduce((sum, entry) => sum + (entry.overtime_hours || 0), 0)
 
@@ -245,18 +237,6 @@ export default function ReportsPage() {
               className="input-field"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value as any)}
-              className="input-field"
-            >
-              <option value="daily">Diario</option>
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensual</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -293,54 +273,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Hours Chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Horas por {selectedPeriod === 'daily' ? 'Día' : selectedPeriod === 'weekly' ? 'Semana' : 'Mes'}
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={currentData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey={selectedPeriod === 'daily' ? 'date' : selectedPeriod === 'weekly' ? 'week' : 'month'} 
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="hours" fill="#3B82F6" name="Horas Normales" />
-              <Bar dataKey="overtime" fill="#F59E0B" name="Horas Extra" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Department Chart */}
-        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Horas por Departamento
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={reportData.departmentHours}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ department, percent }) => `${department} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="hours"
-              >
-                {reportData.departmentHours.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
 
       {/* Top Employees */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
