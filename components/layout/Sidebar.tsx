@@ -56,7 +56,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-6 left-4 z-50">
         <button
           type="button"
           className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-md border dark:border-gray-700"
@@ -77,7 +77,7 @@ export default function Sidebar() {
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 bg-primary-600 dark:bg-primary-700">
+          <div className="flex items-center justify-center h-20 px-4 bg-primary-600 dark:bg-primary-700">
             <h1 className="text-xl font-bold text-white">
               Control Horario
             </h1>
