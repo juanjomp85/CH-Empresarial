@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react'
 export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useRole } from '@/lib/hooks/useRole'
 import { Calendar, Download, TrendingUp, Clock, Users } from 'lucide-react'
 import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
 
@@ -26,18 +27,17 @@ interface ReportData {
   weeklyHours: Array<{ week: string; hours: number; overtime: number }>
   monthlyHours: Array<{ month: string; hours: number; overtime: number }>
   departmentHours: Array<{ department: string; hours: number; employees: number }>
-  topEmployees: Array<{ name: string; hours: number }>
 }
 
 export default function ReportsPage() {
   const { user } = useAuth()
+  const { isAdmin, employeeId } = useRole()
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [reportData, setReportData] = useState<ReportData>({
     dailyHours: [],
     weeklyHours: [],
     monthlyHours: [],
-    departmentHours: [],
-    topEmployees: []
+    departmentHours: []
   })
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState({
@@ -49,8 +49,8 @@ export default function ReportsPage() {
     if (!user) return
 
     try {
-      // Obtener todas las entradas de tiempo en el rango de fechas
-      const { data: entries, error } = await supabase
+      // Construir la consulta base
+      let query = supabase
         .from('time_entries')
         .select(`
           *,
@@ -61,9 +61,15 @@ export default function ReportsPage() {
         `)
         .gte('date', dateRange.start)
         .lte('date', dateRange.end)
-        .order('date', { ascending: false })
 
-      console.log('📊 Report data query result:', { entries, error })
+      // Si no es admin, filtrar solo sus propias entradas
+      if (!isAdmin && employeeId) {
+        query = query.eq('employee_id', employeeId)
+      }
+
+      const { data: entries, error } = await query.order('date', { ascending: false })
+
+      console.log('📊 Report data query result:', { entries, error, isAdmin, employeeId })
 
       if (entries) {
         setTimeEntries(entries)
@@ -74,7 +80,7 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [user, dateRange])
+  }, [user, dateRange, isAdmin, employeeId])
 
   useEffect(() => {
     loadReportData()
@@ -87,7 +93,6 @@ export default function ReportsPage() {
     const weeklyMap = new Map()
     const monthlyMap = new Map()
     const departmentMap = new Map()
-    const employeeMap = new Map()
 
     entries.forEach(entry => {
       const date = new Date(entry.date)
@@ -131,13 +136,6 @@ export default function ReportsPage() {
       const dept = departmentMap.get(department)
       dept.hours += hours
       dept.employees.add(employeeName)
-
-      // Top empleados
-      if (!employeeMap.has(employeeName)) {
-        employeeMap.set(employeeName, { name: employeeName, hours: 0 })
-      }
-      const emp = employeeMap.get(employeeName)
-      emp.hours += hours
     })
 
     // Convertir mapas a arrays y ordenar
@@ -148,16 +146,12 @@ export default function ReportsPage() {
       ...dept,
       employees: dept.employees.size
     })).sort((a, b) => b.hours - a.hours)
-    const topEmployees = Array.from(employeeMap.values())
-      .sort((a, b) => b.hours - a.hours)
-      .slice(0, 10)
 
     setReportData({
       dailyHours,
       weeklyHours,
       monthlyHours,
-      departmentHours,
-      topEmployees
+      departmentHours
     })
   }
 
@@ -273,54 +267,6 @@ export default function ReportsPage() {
         </div>
       </div>
 
-
-      {/* Top Employees */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Top Empleados por Horas
-          </h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Empleado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Horas Totales
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-              {reportData.topEmployees.map((employee, index) => (
-                <tr key={employee.name} className="hover:bg-gray-50 dark:bg-gray-800">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-8 w-8">
-                        <div className="h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-primary-600">
-                            {index + 1}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {employee.name}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                    {formatDuration(employee.hours)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {/* Recent Entries */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
