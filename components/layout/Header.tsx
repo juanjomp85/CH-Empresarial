@@ -45,18 +45,18 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Page title - se puede personalizar según la página */}
-          <div className="flex items-center">
+          <div className="flex items-center pl-12 lg:pl-0">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               {getPageTitle()}
             </h2>
           </div>
 
           {/* Right side */}
-          <div className="flex items-center space-x-4">
-            {/* Debug button (temporary) */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Debug button (temporary) - oculto en móvil */}
             <a
               href="/debug"
-              className="p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
+              className="hidden sm:block p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
               title="Diagnóstico de conexión"
             >
               <Bug className="h-5 w-5" />
@@ -77,12 +77,12 @@ export default function Header() {
 
             {/* Notifications */}
             <button className="p-2 text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-100 relative">
-              <Bell className="h-6 w-6" />
+              <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
             </button>
 
             {/* User menu */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="flex items-center space-x-2">
                 <div className="h-8 w-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
                   <User className="h-5 w-5 text-primary-600 dark:text-primary-400" />
