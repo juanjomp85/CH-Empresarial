@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRole } from '@/lib/hooks/useRole'
+import { formatDateForDB } from '@/lib/utils'
+import EmployeeSearch from '@/components/common/EmployeeSearch'
 import { 
   Clock, 
   CheckCircle, 
@@ -12,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Calendar,
-  User
+  User,
+  Download
 } from 'lucide-react'
 
 interface ComplianceRecord {
@@ -55,8 +58,10 @@ export default function AttendanceCompliance() {
   const [records, setRecords] = useState<ComplianceRecord[]>([])
   const [summary, setSummary] = useState<ComplianceSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [dateRange, setDateRange] = useState({
+    start: formatDateForDB(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+    end: formatDateForDB(new Date())
+  })
   const [employeeId, setEmployeeId] = useState<string | null>(null)
   const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
@@ -78,7 +83,7 @@ export default function AttendanceCompliance() {
       loadCompliance(targetEmployeeId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId, selectedEmployeeId, selectedMonth, selectedYear, isAdmin])
+  }, [employeeId, selectedEmployeeId, dateRange, isAdmin])
 
   const loadEmployees = async () => {
     try {
@@ -121,34 +126,53 @@ export default function AttendanceCompliance() {
 
     setLoading(true)
     try {
-      // Cargar resumen mensual
-      const { data: summaryData, error: summaryError } = await supabase
-        .rpc('get_monthly_compliance_summary', {
-          p_employee_id: targetEmployeeId,
-          p_month: selectedMonth,
-          p_year: selectedYear
-        })
-
-      if (summaryError) throw summaryError
-      if (summaryData && summaryData.length > 0) {
-        setSummary(summaryData[0])
-      } else {
-        setSummary(null)
-      }
-
-      // Cargar detalles del mes
-      const startDate = new Date(selectedYear, selectedMonth - 1, 1)
-      const endDate = new Date(selectedYear, selectedMonth, 0)
-
+      // Cargar detalles del rango de fechas
       const { data: recordsData, error: recordsError } = await supabase
         .rpc('get_employee_compliance', {
           p_employee_id: targetEmployeeId,
-          p_start_date: startDate.toISOString().split('T')[0],
-          p_end_date: endDate.toISOString().split('T')[0]
+          p_start_date: dateRange.start,
+          p_end_date: dateRange.end
         })
 
       if (recordsError) throw recordsError
       setRecords(recordsData || [])
+
+      // Calcular resumen desde los registros
+      if (recordsData && recordsData.length > 0) {
+        const workingDays = recordsData.filter((r: any) => r.is_working_day)
+        const punctualDays = recordsData.filter((r: any) => r.arrival_status === 'PUNTUAL')
+        const lateDays = recordsData.filter((r: any) => 
+          ['RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE'].includes(r.arrival_status)
+        )
+        const absentDays = recordsData.filter((r: any) => r.arrival_status === 'AUSENTE')
+        
+        const totalWorking = workingDays.length
+        const avgDelay = lateDays.reduce((sum: number, r: any) => 
+          sum + (r.arrival_delay_minutes || 0), 0
+        ) / lateDays.length || 0
+        
+        const totalHours = workingDays.reduce((sum: number, r: any) => 
+          sum + (r.total_hours || 0), 0
+        )
+        const totalExpected = workingDays.reduce((sum: number, r: any) => 
+          sum + (r.expected_hours || 0), 0
+        )
+
+        setSummary({
+          total_working_days: totalWorking,
+          punctual_days: punctualDays.length,
+          late_days: lateDays.length,
+          absent_days: absentDays.length,
+          punctuality_percentage: totalWorking > 0 ? (punctualDays.length / totalWorking * 100) : 0,
+          absenteeism_percentage: totalWorking > 0 ? (absentDays.length / totalWorking * 100) : 0,
+          avg_delay_minutes: avgDelay,
+          total_hours_worked: totalHours,
+          total_expected_hours: totalExpected,
+          hours_difference: totalHours - totalExpected
+        })
+      } else {
+        setSummary(null)
+      }
     } catch (error) {
       console.error('Error loading compliance:', error)
       alert('Error al cargar el cumplimiento de horarios')
@@ -212,6 +236,54 @@ export default function AttendanceCompliance() {
     return time.substring(0, 5)
   }
 
+  const exportToCSV = () => {
+    const selectedEmp = employees.find(e => e.id === selectedEmployeeId)
+    const empName = selectedEmp?.full_name || 'empleado'
+    
+    const headers = [
+      'Fecha',
+      'Día',
+      'Día Laboral',
+      'Hora Entrada Esperada',
+      'Hora Salida Esperada',
+      'Hora Entrada Real',
+      'Hora Salida Real',
+      'Minutos Retraso',
+      'Estado Llegada',
+      'Estado Salida',
+      'Horas Trabajadas',
+      'Horas Esperadas',
+      'Diferencia Horas'
+    ]
+    
+    const csvContent = [
+      headers.join(','),
+      ...records.map(record => [
+        record.date,
+        record.day_name.trim(),
+        record.is_working_day ? 'Sí' : 'No',
+        formatTimeOnly(record.expected_start_time),
+        formatTimeOnly(record.expected_end_time),
+        formatTime(record.clock_in),
+        formatTime(record.clock_out),
+        record.arrival_delay_minutes || 0,
+        getStatusLabel(record.arrival_status),
+        getStatusLabel(record.departure_status),
+        record.total_hours?.toFixed(2) || 0,
+        record.expected_hours?.toFixed(2) || 0,
+        record.hours_difference?.toFixed(2) || 0
+      ].join(','))
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cumplimiento-${empName}-${dateRange.start}-${dateRange.end}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -225,52 +297,46 @@ export default function AttendanceCompliance() {
       {/* Filtros */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center">
-            <Calendar className="h-6 w-6 text-primary-600 mr-3" />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Filtros de Cumplimiento
-            </h2>
-          </div>
-          
-          <div className="flex gap-3 flex-wrap">
-            {/* Selector de empleado (solo para admins) */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Búsqueda de empleado (solo para admins) */}
             {isAdmin && employees.length > 0 && (
-              <select
-                value={selectedEmployeeId}
-                onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                className="input-field"
-              >
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name}
-                  </option>
-                ))}
-              </select>
+              <EmployeeSearch
+                employees={employees}
+                selectedEmployeeId={selectedEmployeeId}
+                onSelectEmployee={setSelectedEmployeeId}
+                placeholder="Buscar empleado..."
+                showAllOption={false}
+              />
             )}
             
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="input-field"
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(2000, i).toLocaleDateString('es-ES', { month: 'long' })}
-                </option>
-              ))}
-            </select>
-            
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="input-field"
-            >
-              {Array.from({ length: 5 }, (_, i) => {
-                const year = new Date().getFullYear() - 2 + i
-                return <option key={year} value={year}>{year}</option>
-              })}
-            </select>
+            {/* Rango de fechas */}
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-gray-400" />
+              <input
+                type="date"
+                value={dateRange.start}
+                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                className="input-field"
+              />
+              <span className="text-gray-500 dark:text-gray-400">a</span>
+              <input
+                type="date"
+                value={dateRange.end}
+                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                className="input-field"
+              />
+            </div>
           </div>
+
+          {/* Botón exportar */}
+          <button
+            onClick={exportToCSV}
+            disabled={records.length === 0}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="h-5 w-5 mr-2" />
+            Exportar CSV
+          </button>
         </div>
       </div>
 

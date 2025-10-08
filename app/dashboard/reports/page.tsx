@@ -10,6 +10,7 @@ import { useRole } from '@/lib/hooks/useRole'
 import { Calendar, Download, TrendingUp, Clock, Users, ClipboardCheck, BarChart3 } from 'lucide-react'
 import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
 import AttendanceCompliance from '@/components/reports/AttendanceCompliance'
+import EmployeeSearch from '@/components/common/EmployeeSearch'
 
 interface TimeEntry {
   id: string
@@ -239,15 +240,6 @@ export default function ReportsPage() {
               Análisis de tiempo, cumplimiento y productividad
             </p>
           </div>
-          {activeTab === 'attendance' && (
-            <button
-              onClick={exportToCSV}
-              className="btn-primary"
-            >
-              <Download className="h-5 w-5 mr-2" />
-              Exportar CSV
-            </button>
-          )}
         </div>
       </div>
 
@@ -290,38 +282,45 @@ export default function ReportsPage() {
         <>
           {/* Filters for Attendance */}
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-            <div className="flex flex-wrap items-center gap-4">
-              {isAdmin && employees.length > 0 && (
-                <select
-                  value={selectedEmployeeFilter}
-                  onChange={(e) => setSelectedEmployeeFilter(e.target.value)}
-                  className="input-field"
-                >
-                  <option value="all">Todos los empleados</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.full_name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="input-field"
-                />
-                <span className="text-gray-500 dark:text-gray-400">a</span>
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="input-field"
-                />
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                {isAdmin && employees.length > 0 && (
+                  <EmployeeSearch
+                    employees={employees}
+                    selectedEmployeeId={selectedEmployeeFilter}
+                    onSelectEmployee={setSelectedEmployeeFilter}
+                    placeholder="Buscar empleado..."
+                    showAllOption={true}
+                  />
+                )}
+                
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5 text-gray-400" />
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="input-field"
+                  />
+                  <span className="text-gray-500 dark:text-gray-400">a</span>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="input-field"
+                  />
+                </div>
               </div>
+
+              {/* Botón exportar CSV */}
+              <button
+                onClick={exportToCSV}
+                disabled={timeEntries.length === 0}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Exportar CSV
+              </button>
             </div>
           </div>
 
