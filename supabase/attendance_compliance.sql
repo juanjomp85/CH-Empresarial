@@ -141,30 +141,30 @@ SELECT
     employee_name,
     department_id,
     department_name,
-    COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL') AS punctual_days,
-    COUNT(*) FILTER (WHERE arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE')) AS late_days,
-    COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE') AS absent_days,
-    COUNT(*) FILTER (WHERE is_working_day = true) AS total_working_days,
+    COUNT(CASE WHEN arrival_status = 'PUNTUAL' THEN 1 END) AS punctual_days,
+    COUNT(CASE WHEN arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE') THEN 1 END) AS late_days,
+    COUNT(CASE WHEN arrival_status = 'AUSENTE' THEN 1 END) AS absent_days,
+    COUNT(CASE WHEN is_working_day = true THEN 1 END) AS total_working_days,
     
     -- Porcentajes
     ROUND(
-        (COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL')::NUMERIC / 
-        NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+        (COUNT(CASE WHEN arrival_status = 'PUNTUAL' THEN 1 END)::NUMERIC / 
+        NULLIF(COUNT(CASE WHEN is_working_day = true THEN 1 END), 0) * 100), 2
     ) AS punctuality_percentage,
     
     ROUND(
-        (COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE')::NUMERIC / 
-        NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+        (COUNT(CASE WHEN arrival_status = 'AUSENTE' THEN 1 END)::NUMERIC / 
+        NULLIF(COUNT(CASE WHEN is_working_day = true THEN 1 END), 0) * 100), 2
     ) AS absenteeism_percentage,
     
     -- Promedios
-    ROUND(AVG(arrival_delay_minutes) FILTER (WHERE arrival_delay_minutes > 0), 2) AS avg_delay_minutes,
-    ROUND(AVG(total_hours) FILTER (WHERE is_working_day = true), 2) AS avg_hours_worked,
-    ROUND(AVG(expected_hours) FILTER (WHERE is_working_day = true), 2) AS avg_expected_hours,
+    ROUND(AVG(CASE WHEN arrival_delay_minutes > 0 THEN arrival_delay_minutes END), 2) AS avg_delay_minutes,
+    ROUND(AVG(CASE WHEN is_working_day = true THEN total_hours END), 2) AS avg_hours_worked,
+    ROUND(AVG(CASE WHEN is_working_day = true THEN expected_hours END), 2) AS avg_expected_hours,
     
     -- Totales
-    SUM(total_hours) FILTER (WHERE is_working_day = true) AS total_hours_worked,
-    SUM(expected_hours) FILTER (WHERE is_working_day = true) AS total_expected_hours
+    SUM(CASE WHEN is_working_day = true THEN total_hours END) AS total_hours_worked,
+    SUM(CASE WHEN is_working_day = true THEN expected_hours END) AS total_expected_hours
 
 FROM attendance_compliance
 GROUP BY employee_id, employee_name, department_id, department_name;
@@ -239,24 +239,24 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        COUNT(*)::INTEGER FILTER (WHERE is_working_day = true) AS total_working_days,
-        COUNT(*)::INTEGER FILTER (WHERE arrival_status = 'PUNTUAL') AS punctual_days,
-        COUNT(*)::INTEGER FILTER (WHERE arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE')) AS late_days,
-        COUNT(*)::INTEGER FILTER (WHERE arrival_status = 'AUSENTE') AS absent_days,
+        COUNT(CASE WHEN is_working_day = true THEN 1 END)::INTEGER AS total_working_days,
+        COUNT(CASE WHEN arrival_status = 'PUNTUAL' THEN 1 END)::INTEGER AS punctual_days,
+        COUNT(CASE WHEN arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE') THEN 1 END)::INTEGER AS late_days,
+        COUNT(CASE WHEN arrival_status = 'AUSENTE' THEN 1 END)::INTEGER AS absent_days,
         ROUND(
-            (COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL')::NUMERIC / 
-            NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+            (COUNT(CASE WHEN arrival_status = 'PUNTUAL' THEN 1 END)::NUMERIC / 
+            NULLIF(COUNT(CASE WHEN is_working_day = true THEN 1 END), 0) * 100), 2
         ) AS punctuality_percentage,
         ROUND(
-            (COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE')::NUMERIC / 
-            NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+            (COUNT(CASE WHEN arrival_status = 'AUSENTE' THEN 1 END)::NUMERIC / 
+            NULLIF(COUNT(CASE WHEN is_working_day = true THEN 1 END), 0) * 100), 2
         ) AS absenteeism_percentage,
-        ROUND(AVG(ac.arrival_delay_minutes) FILTER (WHERE ac.arrival_delay_minutes > 0), 2) AS avg_delay_minutes,
-        ROUND(SUM(ac.total_hours) FILTER (WHERE is_working_day = true), 2) AS total_hours_worked,
-        ROUND(SUM(ac.expected_hours) FILTER (WHERE is_working_day = true), 2) AS total_expected_hours,
+        ROUND(AVG(CASE WHEN ac.arrival_delay_minutes > 0 THEN ac.arrival_delay_minutes END), 2) AS avg_delay_minutes,
+        ROUND(SUM(CASE WHEN is_working_day = true THEN ac.total_hours END), 2) AS total_hours_worked,
+        ROUND(SUM(CASE WHEN is_working_day = true THEN ac.expected_hours END), 2) AS total_expected_hours,
         ROUND(
-            SUM(ac.total_hours) FILTER (WHERE is_working_day = true) - 
-            SUM(ac.expected_hours) FILTER (WHERE is_working_day = true), 2
+            SUM(CASE WHEN is_working_day = true THEN ac.total_hours END) - 
+            SUM(CASE WHEN is_working_day = true THEN ac.expected_hours END), 2
         ) AS hours_difference
     FROM attendance_compliance ac
     WHERE ac.employee_id = p_employee_id
