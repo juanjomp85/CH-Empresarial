@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   LogOut,
-  Shield
+  Shield,
+  ClipboardCheck
 } from 'lucide-react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRole } from '@/lib/hooks/useRole'
@@ -29,6 +30,7 @@ interface NavigationItem {
 const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Mi Tiempo', href: '/dashboard/time', icon: Clock },
+  { name: 'Cumplimiento', href: '/dashboard/compliance', icon: ClipboardCheck },
   { name: 'Empleados', href: '/dashboard/employees', icon: Users, adminOnly: true },
   { name: 'Reportes', href: '/dashboard/reports', icon: FileText },
   { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar },

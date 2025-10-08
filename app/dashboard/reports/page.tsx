@@ -9,6 +9,7 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useRole } from '@/lib/hooks/useRole'
 import { Calendar, Download, TrendingUp, Clock, Users } from 'lucide-react'
 import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
+import AttendanceCompliance from '@/components/reports/AttendanceCompliance'
 
 interface TimeEntry {
   id: string
@@ -267,6 +268,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Attendance Compliance Section */}
+      <AttendanceCompliance />
 
       {/* Recent Entries */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow">

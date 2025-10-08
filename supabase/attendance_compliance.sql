@@ -1,0 +1,301 @@
+-- ============================================
+-- SISTEMA DE CUMPLIMIENTO DE HORARIOS
+-- ============================================
+-- Este script crea funciones y vistas para analizar el cumplimiento
+-- de los horarios establecidos por departamento
+
+-- ============================================
+-- FUNCIÓN: Obtener horario esperado para un empleado en una fecha
+-- ============================================
+CREATE OR REPLACE FUNCTION get_expected_schedule(
+    p_employee_id UUID,
+    p_date DATE
+)
+RETURNS TABLE (
+    day_of_week INTEGER,
+    start_time TIME,
+    end_time TIME,
+    is_working_day BOOLEAN
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ds.day_of_week,
+        ds.start_time,
+        ds.end_time,
+        ds.is_working_day
+    FROM employees e
+    INNER JOIN department_schedules ds ON ds.department_id = e.department_id
+    WHERE e.id = p_employee_id
+    AND ds.day_of_week = EXTRACT(DOW FROM p_date)::INTEGER;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- FUNCIÓN: Calcular minutos de retraso/adelanto
+-- ============================================
+CREATE OR REPLACE FUNCTION calculate_time_difference_minutes(
+    actual_time TIMESTAMP WITH TIME ZONE,
+    expected_time TIME
+)
+RETURNS INTEGER AS $$
+DECLARE
+    actual_time_only TIME;
+    diff_interval INTERVAL;
+BEGIN
+    actual_time_only := actual_time::TIME;
+    diff_interval := actual_time_only - expected_time;
+    RETURN EXTRACT(EPOCH FROM diff_interval)::INTEGER / 60;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- VISTA: Análisis de cumplimiento de horarios
+-- ============================================
+CREATE OR REPLACE VIEW attendance_compliance AS
+SELECT 
+    e.id AS employee_id,
+    e.full_name AS employee_name,
+    e.department_id,
+    d.name AS department_name,
+    te.date,
+    te.clock_in,
+    te.clock_out,
+    te.total_hours,
+    ds.start_time AS expected_start_time,
+    ds.end_time AS expected_end_time,
+    ds.is_working_day,
+    
+    -- Calcular si llegó tarde (en minutos)
+    CASE 
+        WHEN te.clock_in IS NOT NULL AND ds.is_working_day THEN
+            EXTRACT(EPOCH FROM (te.clock_in::TIME - ds.start_time)) / 60
+        ELSE NULL
+    END AS arrival_delay_minutes,
+    
+    -- Calcular si salió temprano (en minutos negativos si salió antes)
+    CASE 
+        WHEN te.clock_out IS NOT NULL AND ds.is_working_day THEN
+            EXTRACT(EPOCH FROM (te.clock_out::TIME - ds.end_time)) / 60
+        ELSE NULL
+    END AS departure_difference_minutes,
+    
+    -- Estado de puntualidad en entrada
+    CASE 
+        WHEN te.clock_in IS NULL AND ds.is_working_day THEN 'AUSENTE'
+        WHEN NOT ds.is_working_day THEN 'DIA_NO_LABORAL'
+        WHEN te.clock_in IS NOT NULL AND ds.is_working_day THEN
+            CASE 
+                WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - ds.start_time)) / 60 <= 0 THEN 'PUNTUAL'
+                WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - ds.start_time)) / 60 <= 15 THEN 'RETRASO_LEVE'
+                WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - ds.start_time)) / 60 <= 30 THEN 'RETRASO_MODERADO'
+                ELSE 'RETRASO_GRAVE'
+            END
+        ELSE 'DESCONOCIDO'
+    END AS arrival_status,
+    
+    -- Estado de cumplimiento en salida
+    CASE 
+        WHEN te.clock_out IS NULL AND ds.is_working_day AND te.clock_in IS NOT NULL THEN 'SIN_SALIDA_REGISTRADA'
+        WHEN NOT ds.is_working_day THEN 'DIA_NO_LABORAL'
+        WHEN te.clock_out IS NOT NULL AND ds.is_working_day THEN
+            CASE 
+                WHEN EXTRACT(EPOCH FROM (te.clock_out::TIME - ds.end_time)) / 60 < -30 THEN 'SALIDA_ANTICIPADA'
+                WHEN EXTRACT(EPOCH FROM (te.clock_out::TIME - ds.end_time)) / 60 >= -30 AND 
+                     EXTRACT(EPOCH FROM (te.clock_out::TIME - ds.end_time)) / 60 <= 30 THEN 'SALIDA_NORMAL'
+                ELSE 'SALIDA_TARDIA'
+            END
+        ELSE 'DESCONOCIDO'
+    END AS departure_status,
+    
+    -- Horas esperadas vs. horas trabajadas
+    CASE 
+        WHEN ds.is_working_day THEN
+            EXTRACT(EPOCH FROM (ds.end_time - ds.start_time)) / 3600
+        ELSE 0
+    END AS expected_hours,
+    
+    -- Diferencia entre horas trabajadas y esperadas
+    CASE 
+        WHEN ds.is_working_day AND te.total_hours IS NOT NULL THEN
+            te.total_hours - (EXTRACT(EPOCH FROM (ds.end_time - ds.start_time)) / 3600)
+        ELSE NULL
+    END AS hours_difference,
+    
+    te.created_at,
+    te.updated_at
+
+FROM employees e
+INNER JOIN departments d ON d.id = e.department_id
+INNER JOIN department_schedules ds ON ds.department_id = e.department_id
+LEFT JOIN time_entries te ON te.employee_id = e.id 
+    AND ds.day_of_week = EXTRACT(DOW FROM te.date)::INTEGER
+WHERE e.is_active = true;
+
+-- ============================================
+-- VISTA: Resumen de cumplimiento por empleado
+-- ============================================
+CREATE OR REPLACE VIEW employee_compliance_summary AS
+SELECT 
+    employee_id,
+    employee_name,
+    department_id,
+    department_name,
+    COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL') AS punctual_days,
+    COUNT(*) FILTER (WHERE arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE')) AS late_days,
+    COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE') AS absent_days,
+    COUNT(*) FILTER (WHERE is_working_day = true) AS total_working_days,
+    
+    -- Porcentajes
+    ROUND(
+        (COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL')::NUMERIC / 
+        NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+    ) AS punctuality_percentage,
+    
+    ROUND(
+        (COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE')::NUMERIC / 
+        NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+    ) AS absenteeism_percentage,
+    
+    -- Promedios
+    ROUND(AVG(arrival_delay_minutes) FILTER (WHERE arrival_delay_minutes > 0), 2) AS avg_delay_minutes,
+    ROUND(AVG(total_hours) FILTER (WHERE is_working_day = true), 2) AS avg_hours_worked,
+    ROUND(AVG(expected_hours) FILTER (WHERE is_working_day = true), 2) AS avg_expected_hours,
+    
+    -- Totales
+    SUM(total_hours) FILTER (WHERE is_working_day = true) AS total_hours_worked,
+    SUM(expected_hours) FILTER (WHERE is_working_day = true) AS total_expected_hours
+
+FROM attendance_compliance
+GROUP BY employee_id, employee_name, department_id, department_name;
+
+-- ============================================
+-- FUNCIÓN: Obtener cumplimiento de un empleado en rango de fechas
+-- ============================================
+CREATE OR REPLACE FUNCTION get_employee_compliance(
+    p_employee_id UUID,
+    p_start_date DATE,
+    p_end_date DATE
+)
+RETURNS TABLE (
+    date DATE,
+    day_name TEXT,
+    is_working_day BOOLEAN,
+    expected_start_time TIME,
+    expected_end_time TIME,
+    clock_in TIMESTAMP WITH TIME ZONE,
+    clock_out TIMESTAMP WITH TIME ZONE,
+    total_hours NUMERIC,
+    arrival_delay_minutes NUMERIC,
+    arrival_status TEXT,
+    departure_status TEXT,
+    expected_hours NUMERIC,
+    hours_difference NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ac.date,
+        TO_CHAR(ac.date, 'Day') AS day_name,
+        ac.is_working_day,
+        ac.expected_start_time,
+        ac.expected_end_time,
+        ac.clock_in,
+        ac.clock_out,
+        ac.total_hours,
+        ac.arrival_delay_minutes,
+        ac.arrival_status,
+        ac.departure_status,
+        ac.expected_hours,
+        ac.hours_difference
+    FROM attendance_compliance ac
+    WHERE ac.employee_id = p_employee_id
+    AND ac.date >= p_start_date
+    AND ac.date <= p_end_date
+    ORDER BY ac.date DESC;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- FUNCIÓN: Obtener resumen mensual de cumplimiento
+-- ============================================
+CREATE OR REPLACE FUNCTION get_monthly_compliance_summary(
+    p_employee_id UUID,
+    p_month INTEGER,
+    p_year INTEGER
+)
+RETURNS TABLE (
+    total_working_days INTEGER,
+    punctual_days INTEGER,
+    late_days INTEGER,
+    absent_days INTEGER,
+    punctuality_percentage NUMERIC,
+    absenteeism_percentage NUMERIC,
+    avg_delay_minutes NUMERIC,
+    total_hours_worked NUMERIC,
+    total_expected_hours NUMERIC,
+    hours_difference NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COUNT(*)::INTEGER FILTER (WHERE is_working_day = true) AS total_working_days,
+        COUNT(*)::INTEGER FILTER (WHERE arrival_status = 'PUNTUAL') AS punctual_days,
+        COUNT(*)::INTEGER FILTER (WHERE arrival_status IN ('RETRASO_LEVE', 'RETRASO_MODERADO', 'RETRASO_GRAVE')) AS late_days,
+        COUNT(*)::INTEGER FILTER (WHERE arrival_status = 'AUSENTE') AS absent_days,
+        ROUND(
+            (COUNT(*) FILTER (WHERE arrival_status = 'PUNTUAL')::NUMERIC / 
+            NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+        ) AS punctuality_percentage,
+        ROUND(
+            (COUNT(*) FILTER (WHERE arrival_status = 'AUSENTE')::NUMERIC / 
+            NULLIF(COUNT(*) FILTER (WHERE is_working_day = true), 0) * 100), 2
+        ) AS absenteeism_percentage,
+        ROUND(AVG(ac.arrival_delay_minutes) FILTER (WHERE ac.arrival_delay_minutes > 0), 2) AS avg_delay_minutes,
+        ROUND(SUM(ac.total_hours) FILTER (WHERE is_working_day = true), 2) AS total_hours_worked,
+        ROUND(SUM(ac.expected_hours) FILTER (WHERE is_working_day = true), 2) AS total_expected_hours,
+        ROUND(
+            SUM(ac.total_hours) FILTER (WHERE is_working_day = true) - 
+            SUM(ac.expected_hours) FILTER (WHERE is_working_day = true), 2
+        ) AS hours_difference
+    FROM attendance_compliance ac
+    WHERE ac.employee_id = p_employee_id
+    AND EXTRACT(MONTH FROM ac.date) = p_month
+    AND EXTRACT(YEAR FROM ac.date) = p_year;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- POLÍTICAS RLS para las vistas
+-- ============================================
+
+-- Los empleados pueden ver su propio cumplimiento
+CREATE POLICY "Employees can view their own compliance" ON time_entries
+    FOR SELECT USING (
+        employee_id IN (SELECT id FROM employees WHERE user_id = auth.uid())
+    );
+
+-- Los administradores pueden ver todo
+CREATE POLICY "Admins can view all compliance" ON time_entries
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM employees 
+            WHERE user_id = auth.uid() 
+            AND role = 'admin'
+        )
+    );
+
+-- ============================================
+-- ÍNDICES para mejorar rendimiento
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_time_entries_employee_date ON time_entries(employee_id, date);
+CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department_id);
+CREATE INDEX IF NOT EXISTS idx_department_schedules_dept_day ON department_schedules(department_id, day_of_week);
+
+-- ============================================
+-- COMENTARIOS para documentación
+-- ============================================
+COMMENT ON VIEW attendance_compliance IS 'Vista que analiza el cumplimiento de horarios comparando registros de tiempo con horarios de departamento';
+COMMENT ON VIEW employee_compliance_summary IS 'Resumen agregado de cumplimiento por empleado con métricas y porcentajes';
+COMMENT ON FUNCTION get_employee_compliance IS 'Obtiene el detalle de cumplimiento de un empleado en un rango de fechas';
+COMMENT ON FUNCTION get_monthly_compliance_summary IS 'Obtiene resumen mensual de cumplimiento de un empleado con métricas agregadas';
