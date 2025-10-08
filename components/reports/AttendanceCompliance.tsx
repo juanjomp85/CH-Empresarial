@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { useRole } from '@/lib/hooks/useRole'
 import { 
   Clock, 
   CheckCircle, 
@@ -43,26 +44,60 @@ interface ComplianceSummary {
   hours_difference: number
 }
 
+interface Employee {
+  id: string
+  full_name: string
+}
+
 export default function AttendanceCompliance() {
   const { user } = useAuth()
+  const { isAdmin } = useRole()
   const [records, setRecords] = useState<ComplianceRecord[]>([])
   const [summary, setSummary] = useState<ComplianceSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [employeeId, setEmployeeId] = useState<string | null>(null)
+  const [employees, setEmployees] = useState<Employee[]>([])
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('')
 
   useEffect(() => {
-    loadEmployeeId()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-
-  useEffect(() => {
-    if (employeeId) {
-      loadCompliance()
+    if (isAdmin !== null) {
+      if (isAdmin) {
+        loadEmployees()
+      } else {
+        loadEmployeeId()
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [employeeId, selectedMonth, selectedYear])
+  }, [user, isAdmin])
+
+  useEffect(() => {
+    const targetEmployeeId = isAdmin ? selectedEmployeeId : employeeId
+    if (targetEmployeeId) {
+      loadCompliance(targetEmployeeId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [employeeId, selectedEmployeeId, selectedMonth, selectedYear, isAdmin])
+
+  const loadEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, full_name')
+        .eq('is_active', true)
+        .order('full_name')
+
+      if (error) throw error
+      setEmployees(data || [])
+      
+      if (data && data.length > 0 && !selectedEmployeeId) {
+        setSelectedEmployeeId(data[0].id)
+      }
+    } catch (error) {
+      console.error('Error loading employees:', error)
+    }
+  }
 
   const loadEmployeeId = async () => {
     if (!user) return
@@ -81,15 +116,15 @@ export default function AttendanceCompliance() {
     }
   }
 
-  const loadCompliance = async () => {
-    if (!employeeId) return
+  const loadCompliance = async (targetEmployeeId: string) => {
+    if (!targetEmployeeId) return
 
     setLoading(true)
     try {
       // Cargar resumen mensual
       const { data: summaryData, error: summaryError } = await supabase
         .rpc('get_monthly_compliance_summary', {
-          p_employee_id: employeeId,
+          p_employee_id: targetEmployeeId,
           p_month: selectedMonth,
           p_year: selectedYear
         })
@@ -97,6 +132,8 @@ export default function AttendanceCompliance() {
       if (summaryError) throw summaryError
       if (summaryData && summaryData.length > 0) {
         setSummary(summaryData[0])
+      } else {
+        setSummary(null)
       }
 
       // Cargar detalles del mes
@@ -105,7 +142,7 @@ export default function AttendanceCompliance() {
 
       const { data: recordsData, error: recordsError } = await supabase
         .rpc('get_employee_compliance', {
-          p_employee_id: employeeId,
+          p_employee_id: targetEmployeeId,
           p_start_date: startDate.toISOString().split('T')[0],
           p_end_date: endDate.toISOString().split('T')[0]
         })
@@ -185,17 +222,32 @@ export default function AttendanceCompliance() {
 
   return (
     <div className="space-y-6">
-      {/* Selector de Mes/Año */}
+      {/* Filtros */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center">
             <Calendar className="h-6 w-6 text-primary-600 mr-3" />
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Cumplimiento de Horarios
+              Filtros de Cumplimiento
             </h2>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
+            {/* Selector de empleado (solo para admins) */}
+            {isAdmin && employees.length > 0 && (
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                className="input-field"
+              >
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name}
+                  </option>
+                ))}
+              </select>
+            )}
+            
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(parseInt(e.target.value))}

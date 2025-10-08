@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useRole } from '@/lib/hooks/useRole'
-import { Calendar, Download, TrendingUp, Clock, Users } from 'lucide-react'
+import { Calendar, Download, TrendingUp, Clock, Users, ClipboardCheck, BarChart3 } from 'lucide-react'
 import { formatDate, formatTime, formatDateForDB, formatDuration } from '@/lib/utils'
 import AttendanceCompliance from '@/components/reports/AttendanceCompliance'
 
@@ -30,9 +30,12 @@ interface ReportData {
   departmentHours: Array<{ department: string; hours: number; employees: number }>
 }
 
+type TabType = 'attendance' | 'compliance'
+
 export default function ReportsPage() {
   const { user } = useAuth()
   const { isAdmin, employeeId } = useRole()
+  const [activeTab, setActiveTab] = useState<TabType>('attendance')
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [reportData, setReportData] = useState<ReportData>({
     dailyHours: [],
@@ -45,6 +48,33 @@ export default function ReportsPage() {
     start: formatDateForDB(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
     end: formatDateForDB(new Date())
   })
+  const [selectedEmployeeFilter, setSelectedEmployeeFilter] = useState<string>('all')
+  const [employees, setEmployees] = useState<Array<{ id: string; full_name: string }>>([])
+  const [loadingEmployees, setLoadingEmployees] = useState(false)
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadEmployees()
+    }
+  }, [isAdmin])
+
+  const loadEmployees = async () => {
+    setLoadingEmployees(true)
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, full_name')
+        .eq('is_active', true)
+        .order('full_name')
+
+      if (error) throw error
+      setEmployees(data || [])
+    } catch (error) {
+      console.error('Error loading employees:', error)
+    } finally {
+      setLoadingEmployees(false)
+    }
+  }
 
   const loadReportData = useCallback(async () => {
     if (!user) return
@@ -63,9 +93,13 @@ export default function ReportsPage() {
         .gte('date', dateRange.start)
         .lte('date', dateRange.end)
 
-      // Si no es admin, filtrar solo sus propias entradas
+      // Filtrar por empleado
       if (!isAdmin && employeeId) {
+        // No admin: solo sus propias entradas
         query = query.eq('employee_id', employeeId)
+      } else if (isAdmin && selectedEmployeeFilter !== 'all') {
+        // Admin con filtro específico
+        query = query.eq('employee_id', selectedEmployeeFilter)
       }
 
       const { data: entries, error } = await query.order('date', { ascending: false })
@@ -81,11 +115,13 @@ export default function ReportsPage() {
     } finally {
       setLoading(false)
     }
-  }, [user, dateRange, isAdmin, employeeId])
+  }, [user, dateRange, isAdmin, employeeId, selectedEmployeeFilter])
 
   useEffect(() => {
-    loadReportData()
-  }, [loadReportData])
+    if (activeTab === 'attendance') {
+      loadReportData()
+    }
+  }, [loadReportData, activeTab])
 
 
   const processReportData = (entries: any[]) => {
@@ -194,117 +230,173 @@ export default function ReportsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Reportes y Estadísticas
             </h1>
-            <p className="text-gray-600">
-              Análisis de tiempo y productividad
+            <p className="text-gray-600 dark:text-gray-400">
+              Análisis de tiempo, cumplimiento y productividad
             </p>
           </div>
-          <button
-            onClick={exportToCSV}
-            className="btn-primary"
-          >
-            <Download className="h-5 w-5 mr-2" />
-            Exportar CSV
-          </button>
+          {activeTab === 'attendance' && (
+            <button
+              onClick={exportToCSV}
+              className="btn-primary"
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Exportar CSV
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-gray-400" />
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-              className="input-field"
-            />
-            <span className="text-gray-500 dark:text-gray-400">a</span>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-              className="input-field"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="stat-card">
-          <div className="flex items-center">
-            <Clock className="h-8 w-8 text-white" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-primary-100">Total Horas</p>
-              <p className="text-2xl font-bold text-white">{formatDuration(totalHours)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center">
-            <TrendingUp className="h-8 w-8 text-white" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-primary-100">Horas Extra</p>
-              <p className="text-2xl font-bold text-white">{formatDuration(totalOvertime)}</p>
-            </div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="flex items-center">
-            <Users className="h-8 w-8 text-white" />
-            <div className="ml-4">
-              <p className="text-sm font-medium text-primary-100">Empleados</p>
-              <p className="text-2xl font-bold text-white">
-                {new Set(timeEntries.map(e => e.employee?.full_name).filter(Boolean)).size}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Attendance Compliance Section */}
-      <AttendanceCompliance />
-
-      {/* Recent Entries */}
+      {/* Tabs */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Entradas Recientes
-          </h3>
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="flex -mb-px">
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`
+                px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+                ${activeTab === 'attendance'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }
+              `}
+            >
+              <BarChart3 className="h-5 w-5" />
+              Reporte de Asistencia
+            </button>
+            <button
+              onClick={() => setActiveTab('compliance')}
+              className={`
+                px-6 py-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2
+                ${activeTab === 'compliance'
+                  ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }
+              `}
+            >
+              <ClipboardCheck className="h-5 w-5" />
+              Reporte de Cumplimiento
+            </button>
+          </nav>
         </div>
-        <div className="divide-y divide-gray-200 dark:divide-gray-800">
-          {timeEntries.slice(0, 10).map((entry) => (
-            <div key={entry.id} className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {entry.employee?.full_name || 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(entry.date)} - {formatTime(entry.clock_in)} a {entry.clock_out ? formatTime(entry.clock_out) : 'En curso'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {entry.total_hours ? formatDuration(entry.total_hours) : 'En curso'}
-                  </p>
-                  {entry.overtime_hours && entry.overtime_hours > 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      +{formatDuration(entry.overtime_hours)} extra
-                    </p>
-                  ) : null}
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === 'attendance' ? (
+        <>
+          {/* Filters for Attendance */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+            <div className="flex flex-wrap items-center gap-4">
+              {isAdmin && employees.length > 0 && (
+                <select
+                  value={selectedEmployeeFilter}
+                  onChange={(e) => setSelectedEmployeeFilter(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="all">Todos los empleados</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.full_name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-gray-400" />
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="input-field"
+                />
+                <span className="text-gray-500 dark:text-gray-400">a</span>
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="input-field"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="stat-card">
+              <div className="flex items-center">
+                <Clock className="h-8 w-8 text-white" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-primary-100">Total Horas</p>
+                  <p className="text-2xl font-bold text-white">{formatDuration(totalHours)}</p>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="stat-card">
+              <div className="flex items-center">
+                <TrendingUp className="h-8 w-8 text-white" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-primary-100">Horas Extra</p>
+                  <p className="text-2xl font-bold text-white">{formatDuration(totalOvertime)}</p>
+                </div>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="flex items-center">
+                <Users className="h-8 w-8 text-white" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-primary-100">Empleados</p>
+                  <p className="text-2xl font-bold text-white">
+                    {new Set(timeEntries.map(e => e.employee?.full_name).filter(Boolean)).size}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Entries */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                Entradas Recientes
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {timeEntries.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {entry.employee?.full_name || 'N/A'}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {formatDate(entry.date)} - {formatTime(entry.clock_in)} a {entry.clock_out ? formatTime(entry.clock_out) : 'En curso'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {entry.total_hours ? formatDuration(entry.total_hours) : 'En curso'}
+                      </p>
+                      {entry.overtime_hours && entry.overtime_hours > 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          +{formatDuration(entry.overtime_hours)} extra
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* Compliance Tab */
+        <AttendanceCompliance />
+      )}
     </div>
   )
 }
