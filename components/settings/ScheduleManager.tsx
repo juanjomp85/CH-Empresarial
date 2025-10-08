@@ -37,6 +37,7 @@ export default function ScheduleManager() {
 
   useEffect(() => {
     loadDepartments()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -307,7 +308,7 @@ export default function ScheduleManager() {
             <p className="font-medium mb-1">Información sobre horarios:</p>
             <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
               <li>Los horarios se aplican a todos los empleados del departamento</li>
-              <li>Desmarca "Día Laboral" para días no laborables</li>
+              <li>Desmarca &quot;Día Laboral&quot; para días no laborables</li>
               <li>Los horarios se utilizan para calcular horas extras y ausencias</li>
               <li>Puedes configurar diferentes horarios para cada departamento</li>
             </ul>
