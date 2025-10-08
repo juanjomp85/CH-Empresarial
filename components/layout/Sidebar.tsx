@@ -56,7 +56,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-6 left-4 z-50">
+      <div className="lg:hidden fixed top-5 left-4 z-50">
         <button
           type="button"
           className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-md border dark:border-gray-700"
