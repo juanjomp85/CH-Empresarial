@@ -9,6 +9,8 @@ import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
 import { Save, Building, Clock, Globe, Palette, Sun, Moon, Monitor } from 'lucide-react'
 import AdminRoute from '@/components/auth/AdminRoute'
+import DepartmentManager from '@/components/settings/DepartmentManager'
+import ScheduleManager from '@/components/settings/ScheduleManager'
 
 interface CompanySettings {
   id: string
@@ -358,6 +360,16 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Department Management */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <DepartmentManager />
+      </div>
+
+      {/* Schedule Management */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+        <ScheduleManager />
       </div>
       </div>
     </AdminRoute>

@@ -89,6 +89,7 @@ export interface Department {
   name: string
   description?: string
   created_at: string
+  updated_at: string
 }
 
 export interface Position {
@@ -97,5 +98,16 @@ export interface Position {
   department_id: string
   description?: string
   created_at: string
+}
+
+export interface DepartmentSchedule {
+  id: string
+  department_id: string
+  day_of_week: number
+  start_time: string
+  end_time: string
+  is_working_day: boolean
+  created_at: string
+  updated_at: string
 }
 
