@@ -24,7 +24,8 @@ export default function Header() {
       '/dashboard/employees': 'Empleados', 
       '/dashboard/reports': 'Reportes',
       '/dashboard/calendar': 'Calendario',
-      '/dashboard/settings': 'Configuración'
+      '/dashboard/settings': 'Configuración',
+      '/dashboard/debug': 'Diagnóstico de Conexión'
     }
     
     // Si la ruta exacta existe en el mapa, la devolvemos
@@ -58,7 +59,7 @@ export default function Header() {
             {/* Debug button - solo para administradores */}
             {isAdmin && (
               <a
-                href="/debug"
+                href="/dashboard/debug"
                 className="hidden sm:block p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
                 title="Diagnóstico de conexión"
               >
