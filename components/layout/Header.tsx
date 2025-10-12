@@ -2,12 +2,14 @@
 
 import { useAuth } from '@/components/providers/AuthProvider'
 import { useTheme } from '@/components/providers/ThemeProvider'
+import { useRole } from '@/lib/hooks/useRole'
 import { usePathname } from 'next/navigation'
 import { Bell, User, Sun, Moon, Bug } from 'lucide-react'
 
 export default function Header() {
   const { user } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const { isAdmin } = useRole()
   const pathname = usePathname()
 
   const toggleTheme = () => {
@@ -53,14 +55,16 @@ export default function Header() {
 
           {/* Right side */}
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {/* Debug button (temporary) - oculto en móvil */}
-            <a
-              href="/debug"
-              className="hidden sm:block p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
-              title="Diagnóstico de conexión"
-            >
-              <Bug className="h-5 w-5" />
-            </a>
+            {/* Debug button - solo para administradores */}
+            {isAdmin && (
+              <a
+                href="/debug"
+                className="hidden sm:block p-2 text-orange-600 dark:text-orange-400 hover:text-orange-900 dark:hover:text-orange-300 transition-colors"
+                title="Diagnóstico de conexión"
+              >
+                <Bug className="h-5 w-5" />
+              </a>
+            )}
             
             {/* Theme toggle */}
             <button 
