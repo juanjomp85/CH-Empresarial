@@ -27,8 +27,8 @@ interface NavigationItem {
 }
 
 const navigation: NavigationItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Mi Tiempo', href: '/dashboard/time', icon: Clock },
+  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Empleados', href: '/dashboard/employees', icon: Users, adminOnly: true },
   { name: 'Reportes', href: '/dashboard/reports', icon: FileText },
   { name: 'Calendario', href: '/dashboard/calendar', icon: Calendar },

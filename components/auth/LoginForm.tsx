@@ -26,7 +26,7 @@ export default function LoginForm() {
         if (error) {
           setError('Credenciales incorrectas')
         } else {
-          router.push('/dashboard')
+          router.push('/dashboard/time')
         }
       } else {
         const { error } = await signUp(email, password, fullName)
