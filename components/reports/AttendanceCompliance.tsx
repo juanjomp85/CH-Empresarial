@@ -236,6 +236,28 @@ export default function AttendanceCompliance() {
     return time.substring(0, 5)
   }
 
+  const formatHoursMinutes = (hours: number | null) => {
+    if (hours === null || hours === undefined) return '-'
+    const totalMinutes = Math.round(hours * 60)
+    const h = Math.floor(totalMinutes / 60)
+    const m = totalMinutes % 60
+    return `${h}h ${m}m`
+  }
+
+  const translateDayName = (dayName: string) => {
+    const daysMap: { [key: string]: string } = {
+      'Monday': 'Lunes',
+      'Tuesday': 'Martes',
+      'Wednesday': 'Miércoles',
+      'Thursday': 'Jueves',
+      'Friday': 'Viernes',
+      'Saturday': 'Sábado',
+      'Sunday': 'Domingo'
+    }
+    const trimmed = dayName.trim()
+    return daysMap[trimmed] || trimmed
+  }
+
   const exportToCSV = () => {
     const selectedEmp = employees.find(e => e.id === selectedEmployeeId)
     const empName = selectedEmp?.full_name || 'empleado'
@@ -260,7 +282,7 @@ export default function AttendanceCompliance() {
       headers.join(','),
       ...records.map(record => [
         record.date,
-        record.day_name.trim(),
+        translateDayName(record.day_name),
         record.is_working_day ? 'Sí' : 'No',
         formatTimeOnly(record.expected_start_time),
         formatTimeOnly(record.expected_end_time),
@@ -269,9 +291,9 @@ export default function AttendanceCompliance() {
         record.arrival_delay_minutes || 0,
         getStatusLabel(record.arrival_status),
         getStatusLabel(record.departure_status),
-        record.total_hours?.toFixed(2) || 0,
-        record.expected_hours?.toFixed(2) || 0,
-        record.hours_difference?.toFixed(2) || 0
+        formatHoursMinutes(record.total_hours),
+        formatHoursMinutes(record.expected_hours),
+        formatHoursMinutes(record.hours_difference)
       ].join(','))
     ].join('\n')
 
@@ -447,7 +469,7 @@ export default function AttendanceCompliance() {
                   Estado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Horas
+                  Tiempo
                 </th>
               </tr>
             </thead>
@@ -462,7 +484,7 @@ export default function AttendanceCompliance() {
                       })}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {record.day_name.trim()}
+                      {translateDayName(record.day_name)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
@@ -497,11 +519,11 @@ export default function AttendanceCompliance() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
-                      {record.total_hours?.toFixed(2) || '-'}h
+                      {formatHoursMinutes(record.total_hours)}
                     </div>
                     {record.hours_difference !== null && record.is_working_day && (
                       <div className={`text-xs ${record.hours_difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {record.hours_difference >= 0 ? '+' : ''}{record.hours_difference.toFixed(2)}h
+                        {record.hours_difference >= 0 ? '+' : ''}{formatHoursMinutes(record.hours_difference)}
                       </div>
                     )}
                   </td>
