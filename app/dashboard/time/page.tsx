@@ -428,22 +428,22 @@ export default function TimeTrackingPage() {
             Resumen del Día
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-300">Entrada</div>
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Entrada</div>
               <div className="text-lg font-semibold text-gray-900 dark:text-white">
                 {formatTime(todayEntry.clock_in)}
               </div>
             </div>
             {todayEntry.clock_out && (
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600 dark:text-gray-300">Salida</div>
+              <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Salida</div>
                 <div className="text-lg font-semibold text-gray-900 dark:text-white">
                   {formatTime(todayEntry.clock_out)}
                 </div>
               </div>
             )}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-300">Total</div>
+            <div className="text-center p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
               <div className="text-lg font-semibold text-gray-900 dark:text-white">
                 {todayEntry.total_hours ? formatDuration(todayEntry.total_hours) : 'En curso'}
               </div>
