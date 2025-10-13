@@ -74,7 +74,7 @@ BEGIN
         es.full_name,
         es.email,
         es.start_time,
-        EXTRACT(EPOCH FROM (CURRENT_TIME - es.start_time)) / 60 AS minutes_late,
+        (EXTRACT(EPOCH FROM (CURRENT_TIME - es.start_time)) / 60)::INTEGER AS minutes_late,
         es.dept_name
     FROM employee_schedules es
     LEFT JOIN todays_entries te ON es.emp_id = te.employee_id
@@ -147,7 +147,7 @@ BEGIN
         es.full_name,
         es.email,
         es.end_time,
-        EXTRACT(EPOCH FROM (CURRENT_TIME - es.end_time)) / 60 AS minutes_late,
+        (EXTRACT(EPOCH FROM (CURRENT_TIME - es.end_time)) / 60)::INTEGER AS minutes_late,
         te.clock_in,
         es.dept_name
     FROM employee_schedules es
