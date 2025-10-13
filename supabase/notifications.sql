@@ -55,19 +55,19 @@ BEGIN
     ),
     todays_entries AS (
         SELECT 
-            employee_id,
-            clock_in
-        FROM time_entries
-        WHERE date = CURRENT_DATE
+            te.employee_id,
+            te.clock_in
+        FROM time_entries te
+        WHERE te.date = CURRENT_DATE
     ),
     recent_notifications AS (
         SELECT 
-            employee_id,
-            MAX(sent_at) as last_sent
-        FROM notification_logs
-        WHERE notification_type = 'clock_in_reminder'
-        AND DATE(sent_at) = CURRENT_DATE
-        GROUP BY employee_id
+            nl.employee_id,
+            MAX(nl.sent_at) as last_sent
+        FROM notification_logs nl
+        WHERE nl.notification_type = 'clock_in_reminder'
+        AND DATE(nl.sent_at) = CURRENT_DATE
+        GROUP BY nl.employee_id
     )
     SELECT 
         es.emp_id,
@@ -127,20 +127,20 @@ BEGIN
     ),
     todays_entries AS (
         SELECT 
-            employee_id,
-            clock_in,
-            clock_out
-        FROM time_entries
-        WHERE date = CURRENT_DATE
+            te.employee_id,
+            te.clock_in,
+            te.clock_out
+        FROM time_entries te
+        WHERE te.date = CURRENT_DATE
     ),
     recent_notifications AS (
         SELECT 
-            employee_id,
-            MAX(sent_at) as last_sent
-        FROM notification_logs
-        WHERE notification_type = 'clock_out_reminder'
-        AND DATE(sent_at) = CURRENT_DATE
-        GROUP BY employee_id
+            nl.employee_id,
+            MAX(nl.sent_at) as last_sent
+        FROM notification_logs nl
+        WHERE nl.notification_type = 'clock_out_reminder'
+        AND DATE(nl.sent_at) = CURRENT_DATE
+        GROUP BY nl.employee_id
     )
     SELECT 
         es.emp_id,
