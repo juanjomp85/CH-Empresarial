@@ -207,6 +207,10 @@ $$;
 -- =====================================================
 ALTER TABLE notification_logs ENABLE ROW LEVEL SECURITY;
 
+-- Eliminar políticas existentes si existen
+DROP POLICY IF EXISTS "Admins can view all notification logs" ON notification_logs;
+DROP POLICY IF EXISTS "Employees can view own notification logs" ON notification_logs;
+
 -- Los administradores pueden ver todos los logs
 CREATE POLICY "Admins can view all notification logs"
     ON notification_logs FOR SELECT
