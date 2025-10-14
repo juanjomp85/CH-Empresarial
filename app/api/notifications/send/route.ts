@@ -66,6 +66,9 @@ export async function POST(request: NextRequest) {
           })
           
           results.clockInSent++
+          
+          // Delay de 600ms entre envíos para evitar rate limit (Resend: 2 req/s)
+          await new Promise(resolve => setTimeout(resolve, 600))
         } catch (error: any) {
           console.error('Error sending clock in reminder:', error)
           results.errors.push({
@@ -106,6 +109,9 @@ export async function POST(request: NextRequest) {
           })
           
           results.clockOutSent++
+          
+          // Delay de 600ms entre envíos para evitar rate limit (Resend: 2 req/s)
+          await new Promise(resolve => setTimeout(resolve, 600))
         } catch (error: any) {
           console.error('Error sending clock out reminder:', error)
           results.errors.push({
