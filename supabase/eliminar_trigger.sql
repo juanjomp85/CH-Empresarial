@@ -44,8 +44,7 @@ INSERT INTO employees (
     role,
     is_active,
     department_id,
-    position_id,
-    hourly_rate
+    position_id
 ) 
 SELECT 
     u.id,
@@ -54,8 +53,7 @@ SELECT
     'employee',
     true,
     NULL,
-    NULL,
-    0
+    NULL
 FROM auth.users u
 WHERE u.email = 'maria.martinez@aspapros.es'
 AND NOT EXISTS (
