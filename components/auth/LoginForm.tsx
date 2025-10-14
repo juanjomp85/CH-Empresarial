@@ -38,13 +38,20 @@ export default function LoginForm() {
       } else {
         const { error, data } = await signUp(email, password, fullName)
         if (error) {
-          console.error('Sign up error:', error)
-          if (error.message.includes('already registered')) {
+          console.error('❌ Sign up error COMPLETO:', error)
+          console.error('❌ Error message:', error.message)
+          console.error('❌ Error code:', error.code)
+          console.error('❌ Error status:', error.status)
+          
+          if (error.message.includes('already registered') || error.message.includes('already been registered')) {
             setError('Este email ya está registrado. Intenta iniciar sesión.')
           } else if (error.message.includes('Password')) {
             setError('La contraseña debe tener al menos 6 caracteres')
+          } else if (error.message.includes('Email')) {
+            setError('Email inválido. Por favor, verifica el formato.')
           } else {
-            setError(error.message || 'Error al crear la cuenta')
+            // Mostrar el error REAL de Supabase
+            setError(`Error: ${error.message || 'Error al crear la cuenta'}`)
           }
         } else {
           // Verificar si necesita confirmación de email
