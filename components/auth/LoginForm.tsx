@@ -24,20 +24,42 @@ export default function LoginForm() {
       if (isLogin) {
         const { error } = await signIn(email, password)
         if (error) {
-          setError('Credenciales incorrectas')
+          console.error('Sign in error:', error)
+          if (error.message.includes('Invalid login credentials')) {
+            setError('Email o contraseña incorrectos')
+          } else if (error.message.includes('Email not confirmed')) {
+            setError('Por favor, confirma tu email antes de iniciar sesión')
+          } else {
+            setError(error.message || 'Error al iniciar sesión')
+          }
         } else {
           router.push('/dashboard/time')
         }
       } else {
-        const { error } = await signUp(email, password, fullName)
+        const { error, data } = await signUp(email, password, fullName)
         if (error) {
-          setError('Error al crear la cuenta')
+          console.error('Sign up error:', error)
+          if (error.message.includes('already registered')) {
+            setError('Este email ya está registrado. Intenta iniciar sesión.')
+          } else if (error.message.includes('Password')) {
+            setError('La contraseña debe tener al menos 6 caracteres')
+          } else {
+            setError(error.message || 'Error al crear la cuenta')
+          }
         } else {
-          setError('Revisa tu email para confirmar la cuenta')
+          // Verificar si necesita confirmación de email
+          if (data?.user && !data.user.confirmed_at) {
+            setError('¡Cuenta creada! Revisa tu email para confirmar tu cuenta y poder iniciar sesión.')
+          } else {
+            // Si no requiere confirmación, redirigir directamente
+            setError('¡Cuenta creada exitosamente! Redirigiendo...')
+            setTimeout(() => router.push('/dashboard/time'), 2000)
+          }
         }
       }
     } catch (err) {
-      setError('Error inesperado')
+      console.error('Unexpected error:', err)
+      setError('Error inesperado. Por favor, intenta de nuevo.')
     } finally {
       setLoading(false)
     }
@@ -119,7 +141,11 @@ export default function LoginForm() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+          <div className={`border px-4 py-3 rounded-lg ${
+            error.includes('exitosamente') || error.includes('creada')
+              ? 'bg-green-50 border-green-200 text-green-700'
+              : 'bg-red-50 border-red-200 text-red-600'
+          }`}>
             {error}
           </div>
         )}
