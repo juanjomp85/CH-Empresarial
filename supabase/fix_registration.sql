@@ -15,6 +15,10 @@ DROP POLICY IF EXISTS "Admins can insert employees" ON employees;
 -- 2. NUEVA POLÍTICA: PERMITIR AUTO-REGISTRO
 -- =====================================================
 
+-- Eliminar políticas si existen (para poder ejecutar el script múltiples veces)
+DROP POLICY IF EXISTS "Users can create their own employee record" ON employees;
+DROP POLICY IF EXISTS "Admins can insert employees" ON employees;
+
 -- Los usuarios pueden crear su propio registro de empleado (UNA VEZ)
 CREATE POLICY "Users can create their own employee record" ON employees
   FOR INSERT
@@ -79,6 +83,10 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+-- Comentario descriptivo
+COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 
+'Crea automáticamente un registro de empleado cuando un nuevo usuario se registra';
 
 -- =====================================================
 -- 5. AÑADIR CONSTRAINT ÚNICO PARA EVITAR DUPLICADOS
