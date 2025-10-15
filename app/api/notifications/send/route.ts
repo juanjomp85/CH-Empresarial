@@ -40,9 +40,18 @@ export async function POST(request: NextRequest) {
       console.error('Error getting clock out reminders:', clockOutError)
     }
 
+    // Generar automáticamente registros de salida para empleados que no ficharon
+    const { data: autoClockOuts, error: autoClockOutError } = await supabase
+      .rpc('auto_generate_clock_out')
+
+    if (autoClockOutError) {
+      console.error('Error generating auto clock outs:', autoClockOutError)
+    }
+
     const results = {
       clockInSent: 0,
       clockOutSent: 0,
+      autoClockOutsGenerated: autoClockOuts || 0,
       errors: [] as any[]
     }
 
@@ -130,6 +139,11 @@ export async function POST(request: NextRequest) {
           })
         }
       }
+    }
+
+    // Log de auto-registros de salida generados
+    if (autoClockOuts && autoClockOuts > 0) {
+      console.log(`Generated ${autoClockOuts} automatic clock-out records`)
     }
 
     return NextResponse.json({
