@@ -122,65 +122,23 @@ export default function EmployeesPage() {
     }
   }
 
-  const handleDeactivateEmployee = async (employeeId: string) => {
-    const employee = employees.find(emp => emp.id === employeeId)
-    const employeeName = employee?.full_name || 'este empleado'
-    
-    if (!confirm(`¿Estás seguro de que quieres desactivar a ${employeeName}?\n\nEsto:\n- Desactivará al empleado (no podrá acceder al sistema)\n- Cambiará su email para evitar conflictos\n- Mantendrá todos los datos históricos\n\n✅ Los datos se pueden recuperar reactivando al empleado.`)) {
-      return
-    }
-
-    try {
-      // Usar la función de desactivación segura
-      const { data, error } = await supabase
-        .rpc('deactivate_employee', { p_employee_id: employeeId })
-
-      if (error) throw error
-
-      if (data && data.success) {
-        alert(`Empleado desactivado correctamente.\n\nNuevo email: ${data.new_email}\n\nLos datos históricos se mantienen y se pueden recuperar.`)
-        loadData() // Recargar datos para mostrar el nuevo estado
-      } else {
-        throw new Error(data?.error || 'Error desconocido')
-      }
-    } catch (error) {
-      console.error('Error deactivating employee:', error)
-      alert(`Error al desactivar empleado: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    }
-  }
-
   const handleDeleteEmployee = async (employeeId: string) => {
-    const employee = employees.find(emp => emp.id === employeeId)
-    const employeeName = employee?.full_name || 'este empleado'
-    
-    if (!confirm(`¿Estás seguro de que quieres eliminar a ${employeeName}?\n\nEsto eliminará:\n- Todos los registros de tiempo\n- Todas las solicitudes de tiempo libre\n- Historial de notificaciones\n- Preferencias de usuario\n\n⚠️ Esta acción no se puede deshacer.`)) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este empleado?')) {
       return
     }
 
     try {
-      // Usar la función de eliminación segura
-      const { data, error } = await supabase
-        .rpc('safe_delete_employee', { p_employee_id: employeeId })
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', employeeId)
 
       if (error) throw error
 
-      if (data && data.success) {
-        // Mostrar resumen de eliminación
-        const deletedRecords = data.deleted_records
-        const message = `Empleado eliminado correctamente:\n\n` +
-          `• Notificaciones eliminadas: ${deletedRecords.notifications}\n` +
-          `• Registros de tiempo eliminados: ${deletedRecords.time_entries}\n` +
-          `• Solicitudes eliminadas: ${deletedRecords.time_off_requests}\n` +
-          `• Preferencias eliminadas: ${deletedRecords.user_preferences}`
-        
-        alert(message)
-        setEmployees(prev => prev.filter(emp => emp.id !== employeeId))
-      } else {
-        throw new Error(data?.error || 'Error desconocido')
-      }
+      setEmployees(prev => prev.filter(emp => emp.id !== employeeId))
     } catch (error) {
       console.error('Error deleting employee:', error)
-      alert(`Error al eliminar empleado: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      alert('Error al eliminar empleado')
     }
   }
 
@@ -331,19 +289,9 @@ export default function EmployeesPage() {
                       <button
                         onClick={() => setEditingEmployee(employee)}
                         className="text-primary-600 hover:text-primary-900"
-                        title="Editar empleado"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
-                      {employee.is_active && (
-                        <button
-                          onClick={() => handleDeactivateEmployee(employee.id)}
-                          className="text-orange-600 hover:text-orange-900"
-                          title="Desactivar empleado (mantiene datos históricos)"
-                        >
-                          Desactivar
-                        </button>
-                      )}
                       <button
                         onClick={() => handleToggleActive(employee.id, employee.is_active)}
                         className={`${
@@ -351,14 +299,12 @@ export default function EmployeesPage() {
                             ? 'text-yellow-600 hover:text-yellow-900' 
                             : 'text-green-600 hover:text-green-900'
                         }`}
-                        title={employee.is_active ? 'Desactivar temporalmente' : 'Activar empleado'}
                       >
-                        {employee.is_active ? 'Pausar' : 'Activar'}
+                        {employee.is_active ? 'Desactivar' : 'Activar'}
                       </button>
                       <button
                         onClick={() => handleDeleteEmployee(employee.id)}
                         className="text-red-600 hover:text-red-900"
-                        title="Eliminar empleado permanentemente (elimina todos los datos)"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
