@@ -4,6 +4,10 @@
 -- Este script crea el sistema de notificaciones automáticas
 -- para recordar a los empleados fichar entrada/salida
 
+-- Configurar zona horaria para las funciones de notificaciones
+-- Esto asegura que CURRENT_TIME use la zona horaria de España
+SET timezone = 'Europe/Madrid';
+
 -- Tabla para registrar notificaciones enviadas
 CREATE TABLE IF NOT EXISTS notification_logs (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -74,7 +78,7 @@ BEGIN
         es.full_name,
         es.email,
         es.start_time,
-        (EXTRACT(EPOCH FROM (CURRENT_TIME - es.start_time)) / 60)::INTEGER AS minutes_late,
+        (EXTRACT(EPOCH FROM ((NOW() AT TIME ZONE 'Europe/Madrid')::TIME - es.start_time)) / 60)::INTEGER AS minutes_late,
         es.dept_name
     FROM employee_schedules es
     LEFT JOIN todays_entries te ON es.emp_id = te.employee_id
@@ -83,13 +87,14 @@ BEGIN
         -- No ha fichado hoy
         te.clock_in IS NULL
         -- Enviar notificación exactamente a las 5 minutos después de la hora de entrada
-        AND CURRENT_TIME >= (es.start_time + INTERVAL '5 minutes')
-        AND CURRENT_TIME < (es.start_time + INTERVAL '6 minutes')
+        -- Usar NOW() AT TIME ZONE 'Europe/Madrid' para asegurar zona horaria correcta
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.start_time + INTERVAL '5 minutes')
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME < (es.start_time + INTERVAL '6 minutes')
         -- No se ha enviado notificación hoy para este empleado
         AND (rn.last_sent IS NULL OR DATE(rn.last_sent) < CURRENT_DATE)
         -- Estamos dentro del horario laboral (no enviar notificaciones de madrugada)
-        AND CURRENT_TIME >= '06:00:00'
-        AND CURRENT_TIME <= '23:00:00';
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= '06:00:00'
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME <= '23:00:00';
 END;
 $$;
 
@@ -148,7 +153,7 @@ BEGIN
         es.full_name,
         es.email,
         es.end_time,
-        (EXTRACT(EPOCH FROM (CURRENT_TIME - es.end_time)) / 60)::INTEGER AS minutes_late,
+        (EXTRACT(EPOCH FROM ((NOW() AT TIME ZONE 'Europe/Madrid')::TIME - es.end_time)) / 60)::INTEGER AS minutes_late,
         te.clock_in,
         es.dept_name
     FROM employee_schedules es
@@ -159,13 +164,14 @@ BEGIN
         te.clock_in IS NOT NULL
         AND te.clock_out IS NULL
         -- Enviar notificación exactamente a las 5 minutos después de la hora de salida
-        AND CURRENT_TIME >= (es.end_time + INTERVAL '5 minutes')
-        AND CURRENT_TIME < (es.end_time + INTERVAL '6 minutes')
+        -- Usar NOW() AT TIME ZONE 'Europe/Madrid' para asegurar zona horaria correcta
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.end_time + INTERVAL '5 minutes')
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME < (es.end_time + INTERVAL '6 minutes')
         -- No se ha enviado notificación hoy para este empleado
         AND (rn.last_sent IS NULL OR DATE(rn.last_sent) < CURRENT_DATE)
         -- Estamos dentro del horario laboral
-        AND CURRENT_TIME >= '06:00:00'
-        AND CURRENT_TIME <= '23:59:59';
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= '06:00:00'
+        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME <= '23:59:59';
 END;
 $$;
 
@@ -284,7 +290,7 @@ BEGIN
             te.clock_in IS NOT NULL
             AND te.clock_out IS NULL
             -- Han pasado 2 horas desde la hora de salida programada
-            AND CURRENT_TIME >= (es.end_time + INTERVAL '2 hours')
+            AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.end_time + INTERVAL '2 hours')
     LOOP
         -- Generar automáticamente el registro de salida
         UPDATE time_entries 
