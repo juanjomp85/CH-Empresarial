@@ -290,7 +290,8 @@ BEGIN
             te.clock_in IS NOT NULL
             AND te.clock_out IS NULL
             -- Han pasado 2 horas desde la hora de salida programada
-            AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.end_time + INTERVAL '2 hours')
+            -- Usar timestamp completo en lugar de solo TIME para evitar problemas con cambio de día
+            AND (NOW() AT TIME ZONE 'Europe/Madrid') >= (CURRENT_DATE + es.end_time + INTERVAL '2 hours')
     LOOP
         -- Generar automáticamente el registro de salida
         UPDATE time_entries 

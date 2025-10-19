@@ -2,7 +2,8 @@
   "crons": [
     {
       "path": "/api/notifications/send",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/5 * * * *",
+      "timezone": "Europe/Madrid"
     }
   ]
 }
