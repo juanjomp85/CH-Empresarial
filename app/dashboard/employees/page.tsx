@@ -186,7 +186,7 @@ export default function EmployeesPage() {
               placeholder="Buscar empleados..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-14"
+              className="input-field pl-16"
             />
           </div>
         </div>
