@@ -43,7 +43,7 @@ export default function TimeTrackingPage() {
   const loadEmployeeData = useCallback(async () => {
     console.log('🔄 Loading employee data for user:', user?.id)
     try {
-      // Obtener empleado actual (debería existir automáticamente por el trigger)
+      // Obtener empleado actual
       const { data: emp, error: empError } = await supabase
         .from('employees')
         .select('*')
@@ -52,43 +52,27 @@ export default function TimeTrackingPage() {
 
       console.log('👤 Employee query result:', { emp, empError })
 
-      if (empError) {
-        console.error('❌ Error loading employee:', empError)
-        throw empError
-      }
+      let currentEmployee = emp
 
       if (!emp) {
-        console.log('🆕 No employee found, attempting to create one for user:', user?.id)
-        
-        // Intentar crear empleado usando la función de la base de datos
-        const { data: createResult, error: createError } = await supabase
-          .rpc('create_employee_for_user', { user_id_param: user?.id })
-        
-        console.log('🆕 Employee creation result:', { createResult, createError })
-        
-        if (createError) {
-          console.error('❌ Error creating employee:', createError)
-          throw new Error('Error al crear información de empleado. Por favor, contacta al administrador.')
-        }
-        
-        if (!createResult?.success) {
-          console.error('❌ Employee creation failed:', createResult?.error)
-          throw new Error(`Error al crear empleado: ${createResult?.error}`)
-        }
-        
-        // Intentar obtener el empleado nuevamente después de crearlo
+        console.log('🆕 Creating new employee for user:', user?.id)
+        // Si no existe el empleado, crearlo
         const { data: newEmp, error: newEmpError } = await supabase
           .from('employees')
-          .select('*')
-          .eq('user_id', user?.id)
+          .insert({
+            user_id: user?.id,
+            email: user?.email,
+            full_name: user?.user_metadata?.full_name || 'Usuario',
+            position_id: null,
+            department_id: null,
+            hourly_rate: 0
+          })
+          .select()
           .single()
-        
-        if (newEmpError || !newEmp) {
-          console.error('❌ Error loading newly created employee:', newEmpError)
-          throw new Error('Empleado creado pero no se pudo cargar. Por favor, recarga la página.')
-        }
-        
-        console.log('✅ New employee loaded:', newEmp)
+
+        console.log('🆕 New employee created:', { newEmp, newEmpError })
+        if (newEmpError) throw newEmpError
+        currentEmployee = newEmp
         setEmployee(newEmp)
       } else {
         console.log('✅ Employee found:', emp)
@@ -97,7 +81,6 @@ export default function TimeTrackingPage() {
 
       // Obtener entrada de hoy
       const today = getTodayString()
-      const currentEmployee = emp || (await supabase.from('employees').select('*').eq('user_id', user?.id).single()).data
       const { data: entry } = await supabase
         .from('time_entries')
         .select('*')

@@ -50,18 +50,15 @@ El formulario de login ahora muestra:
 
 En **Supabase SQL Editor**, ejecuta:
 
-```sql
--- Ejecutar el archivo: supabase/fix_registration.sql
+```
+supabase/fix_registration.sql
 ```
 
 Este script:
-- ✅ Elimina la política restrictiva anterior
-- ✅ Crea nuevas políticas que permiten auto-registro
-- ✅ Añade trigger automático para crear empleados
-- ✅ Añade constraint único para evitar duplicados
-- ✅ Unifica el sistema de roles
-- ✅ Actualiza todas las políticas RLS
-- ✅ Crea preferencias de usuario automáticamente
+- Elimina la política restrictiva anterior
+- Crea nuevas políticas que permiten auto-registro
+- Añade trigger automático para crear empleados
+- Añade constraint único para evitar duplicados
 
 ### Paso 2: Configurar Confirmación de Email (Opcional)
 
