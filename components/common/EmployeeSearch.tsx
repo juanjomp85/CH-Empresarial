@@ -76,7 +76,7 @@ export default function EmployeeSearch({
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          className="input-field pl-10 pr-10"
+          className="input-field pl-12 pr-10"
         />
         {(searchTerm || selectedEmployeeId !== 'all') && (
           <button
