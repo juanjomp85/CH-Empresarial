@@ -180,3 +180,19 @@ Después de aplicar estas correcciones:
 **Impacto**: Alto - Corrige el problema principal del cierre automático  
 **Compatibilidad**: ✅ Compatible con todas las versiones anteriores
 
+---
+
+## ⚠️ ACTUALIZACIÓN: 20 de octubre de 2025
+
+**Problema Detectado**: Los cambios realizados en este fix causaron un efecto colateral en las notificaciones.
+
+**Síntomas**:
+- ❌ Algunos usuarios NO recibieron notificaciones de entrada/salida
+- ❌ Las notificaciones que se enviaron fueron a horas incorrectas
+
+**Causa**: Durante los cambios del 19 de octubre, se introdujeron restricciones de ventana de 1 minuto en las funciones de notificación, lo que causó que solo funcionaran para horarios múltiplos de 5 minutos.
+
+**Solución**: Ver `FIX_NOTIFICACIONES_PERDIDAS.md` para los detalles completos y la corrección.
+
+**Estado**: ✅ Corregido el 20 de octubre de 2025
+

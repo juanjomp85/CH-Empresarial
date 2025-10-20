@@ -86,10 +86,9 @@ BEGIN
     WHERE 
         -- No ha fichado hoy
         te.clock_in IS NULL
-        -- Enviar notificación exactamente a las 5 minutos después de la hora de entrada
+        -- Enviar notificación si han pasado 5 minutos o más después de la hora de entrada
         -- Usar NOW() AT TIME ZONE 'Europe/Madrid' para asegurar zona horaria correcta
         AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.start_time + INTERVAL '5 minutes')
-        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME < (es.start_time + INTERVAL '6 minutes')
         -- No se ha enviado notificación hoy para este empleado
         AND (rn.last_sent IS NULL OR DATE(rn.last_sent) < CURRENT_DATE)
         -- Estamos dentro del horario laboral (no enviar notificaciones de madrugada)
@@ -163,10 +162,9 @@ BEGIN
         -- Ha fichado entrada pero no salida
         te.clock_in IS NOT NULL
         AND te.clock_out IS NULL
-        -- Enviar notificación exactamente a las 5 minutos después de la hora de salida
+        -- Enviar notificación si han pasado 5 minutos o más después de la hora de salida
         -- Usar NOW() AT TIME ZONE 'Europe/Madrid' para asegurar zona horaria correcta
         AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME >= (es.end_time + INTERVAL '5 minutes')
-        AND (NOW() AT TIME ZONE 'Europe/Madrid')::TIME < (es.end_time + INTERVAL '6 minutes')
         -- No se ha enviado notificación hoy para este empleado
         AND (rn.last_sent IS NULL OR DATE(rn.last_sent) < CURRENT_DATE)
         -- Estamos dentro del horario laboral

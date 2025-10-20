@@ -25,6 +25,7 @@ export default function CalendarPage() {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
   const loadTimeEntries = useCallback(async () => {
     if (!user) return
@@ -174,16 +175,19 @@ export default function CalendarPage() {
             const isToday = day.date.toDateString() === new Date().toDateString()
             const totalHours = entries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)
 
+            const isSelected = selectedDate && day.date.toDateString() === selectedDate.toDateString()
+
             return (
               <div
                 key={index}
+                onClick={() => day.isCurrentMonth && setSelectedDate(day.date)}
                 className={`min-h-[120px] p-2 border-r border-b border-gray-200 dark:border-gray-800 last:border-r-0 ${
-                  day.isCurrentMonth ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'
-                } ${isToday ? 'bg-primary-50' : ''}`}
+                  day.isCurrentMonth ? 'bg-white dark:bg-gray-900 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800'
+                } ${isToday ? 'bg-primary-50 dark:bg-primary-900/20' : ''} ${isSelected ? 'ring-2 ring-primary-500 ring-inset' : ''} transition-all`}
               >
                 <div className={`text-sm font-medium mb-1 ${
                   day.isCurrentMonth ? 'text-gray-900 dark:text-white' : 'text-gray-400'
-                } ${isToday ? 'text-primary-600' : ''}`}>
+                } ${isToday ? 'text-primary-600 dark:text-primary-400' : ''} ${isSelected ? 'text-primary-600 dark:text-primary-400' : ''}`}>
                   {day.date.getDate()}
                 </div>
                 
@@ -205,15 +209,140 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/* Detalles del Día Seleccionado */}
+      {selectedDate && (
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              Registros del {selectedDate.getDate()} de {monthNames[selectedDate.getMonth()]} de {selectedDate.getFullYear()}
+            </h3>
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            >
+              Cerrar ✕
+            </button>
+          </div>
+
+          {(() => {
+            const selectedEntries = getEntriesForDate(selectedDate)
+            
+            if (selectedEntries.length === 0) {
+              return (
+                <div className="text-center py-8">
+                  <div className="text-gray-400 dark:text-gray-500 mb-2">
+                    <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No hay registros para este día
+                  </p>
+                </div>
+              )
+            }
+
+            return (
+              <div className="space-y-4">
+                {/* Resumen del día */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total de Horas</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatDuration(selectedEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0))}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Empleados</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {selectedEntries.length}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Promedio de Horas</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatDuration((selectedEntries.reduce((sum, entry) => sum + (entry.total_hours || 0), 0)) / selectedEntries.length)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista de registros */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Empleado
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Hora de Entrada
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Hora de Salida
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Total de Horas
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                      {selectedEntries.map((entry) => (
+                        <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-8 w-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary-600 dark:text-primary-400">
+                                  {entry.employee?.full_name?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-3">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {entry.employee?.full_name}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                              <Clock className="h-4 w-4 mr-2 text-green-500" />
+                              {formatTime(entry.clock_in)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center text-sm text-gray-900 dark:text-white">
+                              <Clock className="h-4 w-4 mr-2 text-red-500" />
+                              {entry.clock_out ? formatTime(entry.clock_out) : (
+                                <span className="text-yellow-600 dark:text-yellow-400">En curso</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {entry.total_hours ? formatDuration(entry.total_hours) : '-'}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })()}
+        </div>
+      )}
+
       {/* Legend */}
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
           Leyenda
         </h3>
-        <div className="flex items-center space-x-6">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center">
-            <div className="w-4 h-4 bg-primary-50 rounded mr-2"></div>
+            <div className="w-4 h-4 bg-primary-50 dark:bg-primary-900/20 rounded mr-2"></div>
             <span className="text-sm text-gray-600 dark:text-gray-300">Hoy</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-white dark:bg-gray-900 border-2 border-primary-500 rounded mr-2"></div>
+            <span className="text-sm text-gray-600 dark:text-gray-300">Día seleccionado</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded mr-2"></div>

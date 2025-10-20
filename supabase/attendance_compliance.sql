@@ -192,27 +192,110 @@ RETURNS TABLE (
     expected_hours NUMERIC,
     hours_difference NUMERIC
 ) AS $$
+DECLARE
+    v_end_date DATE;
 BEGIN
+    -- Limitar la fecha final a ayer (no incluir el día actual)
+    -- Esto evita contar como ausencias días que aún están en curso
+    v_end_date := LEAST(p_end_date, CURRENT_DATE - INTERVAL '1 day');
+    
     RETURN QUERY
+    WITH date_range AS (
+        -- Generar todas las fechas del rango (hasta ayer como máximo)
+        SELECT generate_series(
+            p_start_date,
+            v_end_date,
+            '1 day'::INTERVAL
+        )::DATE AS date_val
+    ),
+    employee_info AS (
+        -- Obtener información del empleado
+        SELECT 
+            e.id,
+            e.full_name,
+            e.department_id
+        FROM employees e
+        WHERE e.id = p_employee_id
+        AND e.is_active = true
+    ),
+    daily_schedule AS (
+        -- Para cada fecha, obtener el horario esperado
+        SELECT 
+            dr.date_val AS date,
+            ds.start_time,
+            ds.end_time,
+            ds.is_working_day,
+            ds.day_of_week
+        FROM date_range dr
+        CROSS JOIN employee_info ei
+        LEFT JOIN department_schedules ds 
+            ON ds.department_id = ei.department_id
+            AND ds.day_of_week = EXTRACT(DOW FROM dr.date_val)::INTEGER
+    )
     SELECT 
-        ac.date,
-        TO_CHAR(ac.date, 'Day') AS day_name,
-        ac.is_working_day,
-        ac.expected_start_time,
-        ac.expected_end_time,
-        ac.clock_in,
-        ac.clock_out,
-        ac.total_hours,
-        ac.arrival_delay_minutes,
-        ac.arrival_status,
-        ac.departure_status,
-        ac.expected_hours,
-        ac.hours_difference
-    FROM attendance_compliance ac
-    WHERE ac.employee_id = p_employee_id
-    AND ac.date >= p_start_date
-    AND ac.date <= p_end_date
-    ORDER BY ac.date DESC;
+        dsch.date,
+        TO_CHAR(dsch.date, 'Day') AS day_name,
+        COALESCE(dsch.is_working_day, false) AS is_working_day,
+        dsch.start_time AS expected_start_time,
+        dsch.end_time AS expected_end_time,
+        te.clock_in,
+        te.clock_out,
+        te.total_hours,
+        
+        -- Calcular minutos de retraso
+        CASE 
+            WHEN te.clock_in IS NOT NULL AND dsch.is_working_day THEN
+                EXTRACT(EPOCH FROM (te.clock_in::TIME - dsch.start_time)) / 60
+            ELSE NULL
+        END AS arrival_delay_minutes,
+        
+        -- Estado de llegada
+        CASE 
+            WHEN te.clock_in IS NULL AND dsch.is_working_day THEN 'AUSENTE'
+            WHEN NOT dsch.is_working_day THEN 'DIA_NO_LABORAL'
+            WHEN te.clock_in IS NOT NULL AND dsch.is_working_day THEN
+                CASE 
+                    WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - dsch.start_time)) / 60 <= 0 THEN 'PUNTUAL'
+                    WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - dsch.start_time)) / 60 <= 15 THEN 'RETRASO_LEVE'
+                    WHEN EXTRACT(EPOCH FROM (te.clock_in::TIME - dsch.start_time)) / 60 <= 30 THEN 'RETRASO_MODERADO'
+                    ELSE 'RETRASO_GRAVE'
+                END
+            ELSE 'DESCONOCIDO'
+        END AS arrival_status,
+        
+        -- Estado de salida
+        CASE 
+            WHEN te.clock_out IS NULL AND dsch.is_working_day AND te.clock_in IS NOT NULL THEN 'SIN_SALIDA_REGISTRADA'
+            WHEN NOT dsch.is_working_day THEN 'DIA_NO_LABORAL'
+            WHEN te.clock_out IS NOT NULL AND dsch.is_working_day THEN
+                CASE 
+                    WHEN EXTRACT(EPOCH FROM (te.clock_out::TIME - dsch.end_time)) / 60 < -30 THEN 'SALIDA_ANTICIPADA'
+                    WHEN EXTRACT(EPOCH FROM (te.clock_out::TIME - dsch.end_time)) / 60 >= -30 AND 
+                         EXTRACT(EPOCH FROM (te.clock_out::TIME - dsch.end_time)) / 60 <= 30 THEN 'SALIDA_NORMAL'
+                    ELSE 'SALIDA_TARDIA'
+                END
+            ELSE 'DESCONOCIDO'
+        END AS departure_status,
+        
+        -- Horas esperadas
+        CASE 
+            WHEN dsch.is_working_day THEN
+                EXTRACT(EPOCH FROM (dsch.end_time - dsch.start_time)) / 3600
+            ELSE 0
+        END AS expected_hours,
+        
+        -- Diferencia de horas
+        CASE 
+            WHEN dsch.is_working_day AND te.total_hours IS NOT NULL THEN
+                te.total_hours - (EXTRACT(EPOCH FROM (dsch.end_time - dsch.start_time)) / 3600)
+            ELSE NULL
+        END AS hours_difference
+        
+    FROM daily_schedule dsch
+    LEFT JOIN time_entries te 
+        ON te.employee_id = p_employee_id
+        AND te.date = dsch.date
+    ORDER BY dsch.date DESC;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -268,6 +351,10 @@ $$ LANGUAGE plpgsql;
 -- ============================================
 -- POLÍTICAS RLS para las vistas
 -- ============================================
+
+-- Eliminar políticas existentes si existen
+DROP POLICY IF EXISTS "Employees can view their own compliance" ON time_entries;
+DROP POLICY IF EXISTS "Admins can view all compliance" ON time_entries;
 
 -- Los empleados pueden ver su propio cumplimiento
 CREATE POLICY "Employees can view their own compliance" ON time_entries

@@ -1,5 +1,19 @@
 # Sistema de Cumplimiento de Horarios
 
+## ⚠️ ACTUALIZACIÓN RECIENTE - 20 de octubre de 2025
+
+**Corrección aplicada**: Cálculo de absentismo mejorado
+
+La función `get_employee_compliance()` ha sido actualizada para:
+- ✅ Generar **todos los días** del rango solicitado (no solo días con fichajes)
+- ✅ Limitar hasta **AYER** (excluye el día actual en curso)
+- ✅ Detectar correctamente **ausencias** en días sin fichaje
+- ✅ Mejorar la precisión de los reportes de absentismo
+
+Ver detalles completos en: [`FIX_ABSENTISMO_REPORTES.md`](FIX_ABSENTISMO_REPORTES.md)
+
+---
+
 ## 📋 Descripción
 
 Este módulo permite analizar y visualizar el cumplimiento de los horarios establecidos por departamento para cada trabajador. El sistema compara las entradas de tiempo reales con los horarios configurados para calcular métricas de puntualidad, absentismo y cumplimiento general.
