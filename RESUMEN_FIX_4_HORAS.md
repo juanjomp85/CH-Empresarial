@@ -54,14 +54,16 @@
    AND (NOW() AT TIME ZONE 'Europe/Madrid') >= ((NOW() AT TIME ZONE 'Europe/Madrid')::DATE + es.end_time + INTERVAL '2 hours')
    ```
 
-4. **Línea 299**: Usar fecha de la entrada registrada
+4. **Línea 304**: Almacenar timestamp en zona horaria correcta
    ```sql
    -- Antes:
    clock_out = CURRENT_DATE + employee_record.expected_clock_out + INTERVAL '2 hours',
    
    -- Ahora:
-   clock_out = te.date + employee_record.expected_clock_out + INTERVAL '2 hours',
+   clock_out = timezone('Europe/Madrid', employee_record.entry_date + employee_record.expected_clock_out + INTERVAL '2 hours'),
    ```
+   
+   **⚠️ CRÍTICO**: Esta corrección es esencial. Sin `timezone('Europe/Madrid', ...)`, PostgreSQL interpreta el timestamp como UTC y al almacenarlo le suma 2 horas, resultando en un `clock_out` incorrecto (ej: 22:00 en lugar de 20:00).
 
 ## 📋 Instrucciones de Aplicación
 

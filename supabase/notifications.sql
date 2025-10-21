@@ -299,8 +299,9 @@ BEGIN
         -- Generar automáticamente el registro de salida
         UPDATE time_entries 
         SET 
-            -- IMPORTANTE: Usar la fecha de la entrada almacenada, no CURRENT_DATE para evitar desfases de zona horaria
-            clock_out = employee_record.entry_date + employee_record.expected_clock_out + INTERVAL '2 hours',
+            -- IMPORTANTE: Crear el timestamp en zona horaria Europe/Madrid explícitamente
+            -- para evitar que PostgreSQL lo interprete como UTC y le sume 2 horas al almacenar
+            clock_out = timezone('Europe/Madrid', employee_record.entry_date + employee_record.expected_clock_out + INTERVAL '2 hours'),
             updated_at = NOW()
         WHERE 
             employee_id = employee_record.employee_id 

@@ -61,13 +61,19 @@ AND (NOW() AT TIME ZONE 'Europe/Madrid') >= ((NOW() AT TIME ZONE 'Europe/Madrid'
 
 **Beneficio:** Ahora usa la fecha en zona horaria local de Madrid, no UTC.
 
-#### 2. Corrección en la actualización del clock_out (línea 299)
+#### 2. Corrección en la actualización del clock_out (línea 304)
 ```sql
 -- ✅ CORREGIDO:
-clock_out = te.date + employee_record.expected_clock_out + INTERVAL '2 hours',
+clock_out = timezone('Europe/Madrid', employee_record.entry_date + employee_record.expected_clock_out + INTERVAL '2 hours'),
 ```
 
-**Beneficio:** Usa la fecha de la entrada (`te.date`) que ya está almacenada correctamente en la base de datos.
+**Beneficio:** 
+- Usa la fecha de la entrada (`entry_date`) que ya está almacenada correctamente
+- Usa `timezone('Europe/Madrid', ...)` para crear el timestamp explícitamente en zona horaria de Madrid
+- Evita que PostgreSQL interprete el timestamp como UTC y le sume 2 horas al almacenar
+
+**⚠️ PROBLEMA DETECTADO EN PRODUCCIÓN (21 oct 2025 - 20:05h):**
+Sin esta corrección, el cierre automático se ejecutaba a la hora correcta (ej: 20:05), pero almacenaba el `clock_out` con 2 horas de más (ej: 22:00 en lugar de 20:00). Esto ocurría porque PostgreSQL interpretaba el timestamp sin zona horaria como UTC.
 
 #### 3. Corrección en el filtro de entradas de hoy (línea 279)
 ```sql
