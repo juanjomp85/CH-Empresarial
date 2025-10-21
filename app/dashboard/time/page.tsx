@@ -286,29 +286,6 @@ export default function TimeTrackingPage() {
     }
   }
 
-  const getCurrentWorkTime = () => {
-    if (!currentSession.clockIn) return 0
-
-    const start = new Date(currentSession.clockIn)
-    const now = currentTime
-    let totalMs = now.getTime() - start.getTime()
-
-    // Restar tiempo de descanso si está en descanso
-    if (currentSession.isOnBreak && currentSession.breakStart) {
-      const breakStart = new Date(currentSession.breakStart)
-      totalMs -= (now.getTime() - breakStart.getTime())
-    }
-
-    // Restar tiempo de descanso ya completado
-    if (todayEntry?.break_start && todayEntry?.break_end) {
-      const breakStart = new Date(todayEntry.break_start)
-      const breakEnd = new Date(todayEntry.break_end)
-      totalMs -= (breakEnd.getTime() - breakStart.getTime())
-    }
-
-    return Math.max(0, totalMs / (1000 * 60 * 60))
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -341,18 +318,6 @@ export default function TimeTrackingPage() {
               {formatDate(currentTime)}
             </div>
           </div>
-
-          {/* Work time display */}
-          {currentSession.clockIn && (
-            <div className="mb-8">
-              <div className="text-3xl font-bold text-primary-600 mb-2">
-                {formatDuration(getCurrentWorkTime())}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                Tiempo trabajado hoy
-              </div>
-            </div>
-          )}
 
           {/* Debug info - Hidden as requested */}
 
