@@ -266,21 +266,25 @@ BEGIN
             LEFT JOIN departments d ON e.department_id = d.id
             WHERE e.is_active = true
             AND ds.is_working_day = true
-            AND ds.day_of_week = EXTRACT(DOW FROM CURRENT_DATE)::INTEGER
+            -- Usar día de la semana en zona horaria local
+            AND ds.day_of_week = EXTRACT(DOW FROM (NOW() AT TIME ZONE 'Europe/Madrid')::DATE)::INTEGER
         ),
         todays_entries AS (
             SELECT 
                 te.employee_id,
                 te.clock_in,
-                te.clock_out
+                te.clock_out,
+                te.date
             FROM time_entries te
-            WHERE te.date = CURRENT_DATE
+            -- Usar la fecha actual en zona horaria local, no UTC
+            WHERE te.date = (NOW() AT TIME ZONE 'Europe/Madrid')::DATE
         )
         SELECT 
             es.emp_id as employee_id,
             es.full_name,
             es.end_time as expected_clock_out,
-            te.clock_in
+            te.clock_in,
+            te.date as entry_date
         FROM employee_schedules es
         INNER JOIN todays_entries te ON es.emp_id = te.employee_id
         WHERE 
@@ -289,16 +293,18 @@ BEGIN
             AND te.clock_out IS NULL
             -- Han pasado 2 horas desde la hora de salida programada
             -- Usar timestamp completo en lugar de solo TIME para evitar problemas con cambio de día
-            AND (NOW() AT TIME ZONE 'Europe/Madrid') >= (CURRENT_DATE + es.end_time + INTERVAL '2 hours')
+            -- IMPORTANTE: Usar la fecha en zona horaria local para evitar desfases
+            AND (NOW() AT TIME ZONE 'Europe/Madrid') >= ((NOW() AT TIME ZONE 'Europe/Madrid')::DATE + es.end_time + INTERVAL '2 hours')
     LOOP
         -- Generar automáticamente el registro de salida
         UPDATE time_entries 
         SET 
-            clock_out = CURRENT_DATE + employee_record.expected_clock_out + INTERVAL '2 hours',
+            -- IMPORTANTE: Usar la fecha de la entrada almacenada, no CURRENT_DATE para evitar desfases de zona horaria
+            clock_out = employee_record.entry_date + employee_record.expected_clock_out + INTERVAL '2 hours',
             updated_at = NOW()
         WHERE 
             employee_id = employee_record.employee_id 
-            AND date = CURRENT_DATE
+            AND date = (NOW() AT TIME ZONE 'Europe/Madrid')::DATE
             AND clock_out IS NULL;
             
         -- Registrar en el log de notificaciones
